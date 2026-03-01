@@ -195,7 +195,6 @@ Webhook handler at `/api/webhooks/stripe` processes:
 | `/dashboard/monitors/[id]/pings`     | Full paginated ping history (25/page, server-rendered)                                                                                                                                        |
 | `/dashboard/monitors/[id]/incidents` | Full paginated incident history (25/page, server-rendered)                                                                                                                                    |
 | `/dashboard/alerts`                  | Alert channel management                                                                                                                                                                      |
-| `/dashboard/integrations`            | Integration overview cards                                                                                                                                                                    |
 | `/dashboard/settings`                | Profile, plan badge, API keys, delete account                                                                                                                                                 |
 
 ### Marketing (public)
@@ -268,8 +267,8 @@ These are listed in CLAUDE.md Phase 5 and are not built:
 
 - **Team/org support** — multi-user access to monitors (team members limit exists in plan but not enforced)
 - **PulseMon self-monitoring status page** — `/status` page exists as a basic health check (DB + Redis ping) but isn't meaningful: self-hosted status pages fail when the app fails, and it has no historical data or real monitoring. Post-launch: set up internal PulseMon monitors on PulseMon's own endpoints, then build a proper status page as a showcase of the public status pages feature
-- **One-click deploy integrations** — Vercel/Render/Fly integration templates
-- **SDK packages** — npm/pip packages for easier ping integration
+- ~~**One-click deploy integrations**~~ — deprioritised
+- ~~**SDK packages**~~ — deprioritised
 - **Public status pages** — per-user public status page showing monitor uptime
 
 ## Known Scaling Considerations
@@ -286,5 +285,4 @@ These are listed in CLAUDE.md Phase 5 and are not built:
 
 ## Known TODOs in Code
 
-- ~~**Webhook signature verification docs**~~ — Done. Node.js and Python verification snippets added to `/docs` page.
 - **Plan downgrade handling** — if a user downgrades, existing monitors/channels beyond the new limit remain functional (no retroactive enforcement)

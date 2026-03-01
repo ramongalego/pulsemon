@@ -8,7 +8,6 @@ import {
   Bell,
   BookOpen,
   LayoutDashboard,
-  Link2,
   Menu,
   Settings,
   LogOut,
@@ -28,7 +27,6 @@ import { useState } from 'react';
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Alerts', href: '/dashboard/alerts', icon: Bell },
-  { label: 'Integrations', href: '/dashboard/integrations', icon: Link2 },
   { label: 'Docs', href: '/dashboard/docs', icon: BookOpen },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];

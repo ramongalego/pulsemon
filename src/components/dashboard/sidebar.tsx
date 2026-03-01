@@ -8,7 +8,6 @@ import {
   Bell,
   BookOpen,
   LayoutDashboard,
-  Link2,
   Settings,
   LogOut,
 } from 'lucide-react';
@@ -26,11 +25,6 @@ const navItems = [
     label: 'Alerts',
     href: '/dashboard/alerts',
     icon: Bell,
-  },
-  {
-    label: 'Integrations',
-    href: '/dashboard/integrations',
-    icon: Link2,
   },
   {
     label: 'Docs',
