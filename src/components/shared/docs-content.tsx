@@ -6,6 +6,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Mail, MessageSquare, Webhook } from 'lucide-react';
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pulsemon.dev';
 
@@ -502,51 +503,37 @@ CMD ["crond", "-f", "-l", "2"]`}</code>
         title="Alert Channels"
         id="alert-channels"
       >
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Email</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">
-                PulseMon sends alerts to your account email by default. Add more
-                addresses on the Alerts page.
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Slack</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">
-                Add a Slack incoming webhook URL to receive alerts in any Slack
-                channel.
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Discord</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">
-                Add a Discord webhook URL to receive alerts in any Discord
-                channel.
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Custom Webhook</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground text-sm">
-                Sends alerts as JSON POST requests to any URL. Each request is
-                signed with HMAC-SHA256.
-              </p>
-            </CardContent>
-          </Card>
+        <div className="divide-y rounded-lg border">
+          {[
+            {
+              name: 'Email',
+              icon: Mail,
+              desc: 'Sends alerts to your account email by default. Add more addresses on the Alerts page.',
+            },
+            {
+              name: 'Slack',
+              icon: MessageSquare,
+              desc: 'Add a Slack incoming webhook URL to receive alerts in any Slack channel.',
+            },
+            {
+              name: 'Discord',
+              icon: MessageSquare,
+              desc: 'Add a Discord webhook URL to receive alerts in any Discord channel.',
+            },
+            {
+              name: 'Custom Webhook',
+              icon: Webhook,
+              desc: 'Sends JSON POST requests to any URL, signed with HMAC-SHA256.',
+            },
+          ].map((ch) => (
+            <div key={ch.name} className="flex items-start gap-3 px-4 py-3">
+              <ch.icon className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+              <span className="text-sm font-medium whitespace-nowrap">
+                {ch.name}
+              </span>
+              <span className="text-muted-foreground text-sm">{ch.desc}</span>
+            </div>
+          ))}
         </div>
       </Section>
 
