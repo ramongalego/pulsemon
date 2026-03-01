@@ -14,6 +14,15 @@ export const INTERVAL_PRESETS: IntervalPreset[] = [
 
 export const DEFAULT_GRACE_PERIOD = 300; // 5 minutes
 
+/** Smart grace period default scaled to the expected interval */
+export function defaultGracePeriod(intervalSeconds: number): number {
+  if (intervalSeconds <= 60) return 30; // fast jobs: 30s grace
+  if (intervalSeconds <= 300) return 60; // 5min or less: 1min grace
+  if (intervalSeconds <= 3600) return 300; // hourly or less: 5min grace
+  if (intervalSeconds <= 86400) return 900; // daily or less: 15min grace
+  return 1800; // weekly+: 30min grace
+}
+
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
   free: {
     monitors: 30,

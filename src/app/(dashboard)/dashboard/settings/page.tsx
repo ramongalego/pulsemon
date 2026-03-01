@@ -15,11 +15,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ApiKeyManager } from '@/components/dashboard/api-key-manager';
+import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
 
 export default async function SettingsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
   const userId = session.user.id;
+
+  const plan = await getUserPlan(userId);
+  const limits = getPlanLimits(plan);
+  const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
 
   const keys = await db
     .select({
@@ -66,21 +71,23 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
+            <div className="space-y-1.5">
               <CardTitle>Plan</CardTitle>
               <CardDescription>Your current subscription</CardDescription>
             </div>
             <Badge variant="secondary" className="text-sm">
-              Free
+              {planLabel}
             </Badge>
           </div>
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground mb-4 text-sm">
-            You&apos;re on the Free plan with 30 monitors, 60s check intervals,
-            and 7 days of ping history.
+            You&apos;re on the {planLabel} plan with{' '}
+            {limits.monitors === Infinity ? 'unlimited' : limits.monitors}{' '}
+            monitors, {limits.checkInterval}s check intervals, and{' '}
+            {limits.pingHistoryDays} days of ping history.
           </p>
-          <Button variant="outline">Upgrade Plan</Button>
+          {plan === 'free' && <Button variant="outline">Upgrade Plan</Button>}
         </CardContent>
       </Card>
 

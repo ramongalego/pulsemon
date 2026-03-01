@@ -12,6 +12,7 @@ vi.mock('@/lib/redis', () => ({
   redisKeys: {
     lastPing: (id: string) => `ping:${id}:last`,
     slugToMonitor: (slug: string) => `slug:${slug}`,
+    pingRateLimit: (slug: string) => `rl:${slug}`,
   },
 }));
 

@@ -93,16 +93,6 @@ export default function MarketingLayout({
                 </li>
               </ul>
             </div>
-            <div>
-              <h3 className="mb-3 text-sm font-semibold">Company</h3>
-              <ul className="text-muted-foreground space-y-2 text-sm">
-                <li>
-                  <Link href="/status" className="hover:text-foreground">
-                    Status
-                  </Link>
-                </li>
-              </ul>
-            </div>
           </div>
           <div className="text-muted-foreground mt-8 border-t pt-8 text-center text-sm">
             Built for developers by a developer.

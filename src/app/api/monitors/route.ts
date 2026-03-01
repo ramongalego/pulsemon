@@ -5,6 +5,7 @@ import { monitors } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { createMonitorSchema } from '@/lib/validations/monitor';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
+import { defaultGracePeriod } from '@/lib/monitoring/constants';
 
 export async function GET() {
   const session = await auth();
@@ -56,7 +57,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, slug, expectedInterval, gracePeriod, tags } = parsed.data;
+    const { name, slug, expectedInterval, tags } = parsed.data;
+    const gracePeriod =
+      parsed.data.gracePeriod ?? defaultGracePeriod(expectedInterval);
 
     // Check plan limits
     const plan = await getUserPlan(session.user.id);

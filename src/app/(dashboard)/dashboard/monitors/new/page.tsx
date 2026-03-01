@@ -22,7 +22,10 @@ import {
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
-import { INTERVAL_PRESETS } from '@/lib/monitoring/constants';
+import {
+  INTERVAL_PRESETS,
+  defaultGracePeriod,
+} from '@/lib/monitoring/constants';
 import { PlanLimitDialog } from '@/components/dashboard/plan-limit-dialog';
 
 function slugify(text: string): string {
@@ -37,7 +40,8 @@ export default function NewMonitorPage() {
   const [name, setName] = useState('');
   const [interval, setInterval] = useState('');
   const [customInterval, setCustomInterval] = useState('');
-  const [gracePeriod, setGracePeriod] = useState('300');
+  const [gracePeriod, setGracePeriod] = useState('');
+  const [graceManuallySet, setGraceManuallySet] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [planLimitMessage, setPlanLimitMessage] = useState<string | null>(null);
 
@@ -46,6 +50,20 @@ export default function NewMonitorPage() {
   const effectiveInterval = isCustom
     ? Number(customInterval)
     : Number(interval);
+
+  function handleIntervalChange(value: string) {
+    setInterval(value);
+    if (!graceManuallySet && value !== 'custom') {
+      setGracePeriod(String(defaultGracePeriod(Number(value))));
+    }
+  }
+
+  function handleCustomIntervalChange(value: string) {
+    setCustomInterval(value);
+    if (!graceManuallySet && Number(value) >= 10) {
+      setGracePeriod(String(defaultGracePeriod(Number(value))));
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -128,7 +146,7 @@ export default function NewMonitorPage() {
 
             <div className="space-y-2">
               <Label htmlFor="interval">Expected Interval</Label>
-              <Select value={interval} onValueChange={setInterval}>
+              <Select value={interval} onValueChange={handleIntervalChange}>
                 <SelectTrigger>
                   <SelectValue placeholder="How often should this job run?" />
                 </SelectTrigger>
@@ -157,7 +175,7 @@ export default function NewMonitorPage() {
                   min="10"
                   placeholder="e.g. 120"
                   value={customInterval}
-                  onChange={(e) => setCustomInterval(e.target.value)}
+                  onChange={(e) => handleCustomIntervalChange(e.target.value)}
                   required
                 />
               </div>
@@ -170,10 +188,15 @@ export default function NewMonitorPage() {
                 type="number"
                 min="0"
                 value={gracePeriod}
-                onChange={(e) => setGracePeriod(e.target.value)}
+                placeholder="Select an interval first"
+                onChange={(e) => {
+                  setGracePeriod(e.target.value);
+                  setGraceManuallySet(true);
+                }}
               />
               <p className="text-muted-foreground text-xs">
-                Extra time to wait before alerting. Default is 5 minutes (300s).
+                Buffer before alerting on a missed ping. Auto-filled based on
+                your interval.
               </p>
             </div>
 

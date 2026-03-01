@@ -8,7 +8,7 @@ import {
   alertChannels,
   monitorAlertChannels,
 } from '@/lib/db/schema';
-import { eq, and, desc, gte } from 'drizzle-orm';
+import { eq, and, desc, gte, lt, count } from 'drizzle-orm';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -20,8 +20,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { RelativeTime } from '@/components/shared/relative-time';
-import { ArrowLeft, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, ArrowUpRight } from 'lucide-react';
 import Link from 'next/link';
+import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
 import { CopyButton } from '@/components/dashboard/copy-button';
 import { PingWatcher } from '@/components/dashboard/ping-watcher';
 import { PingsTable } from '@/components/dashboard/pings-table';
@@ -135,6 +136,23 @@ export default async function MonitorDetailPage({
     .where(eq(monitorAlertChannels.monitorId, monitor.id));
 
   const linkedChannelIds = linkedRows.map((r) => r.alertChannelId);
+
+  // Plan-based retention info
+  const plan = await getUserPlan(userId);
+  const limits = getPlanLimits(plan);
+  const retentionCutoff = new Date(
+    new Date().getTime() - limits.pingHistoryDays * 24 * 60 * 60 * 1000,
+  );
+  const [{ value: hiddenPingCount }] = await db
+    .select({ value: count() })
+    .from(pings)
+    .where(
+      and(
+        eq(pings.monitorId, monitor.id),
+        lt(pings.receivedAt, retentionCutoff),
+      ),
+    );
+  const hasHiddenPings = hiddenPingCount > 0;
 
   const pingUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/ping/${monitor.slug}`;
 
@@ -290,8 +308,22 @@ export default async function MonitorDetailPage({
       {/* Recent pings table */}
       <Card>
         <CardHeader>
-          <CardTitle>Recent Pings</CardTitle>
-          <CardDescription>Pings received for this monitor</CardDescription>
+          <div className="flex items-center justify-between">
+            <div className="space-y-1.5">
+              <CardTitle>Recent Pings</CardTitle>
+              <CardDescription>
+                Last {limits.pingHistoryDays} days of ping history
+              </CardDescription>
+            </div>
+            {hasHiddenPings && (
+              <Link href="/pricing">
+                <Button variant="outline" size="sm" className="gap-1">
+                  Upgrade for more history
+                  <ArrowUpRight className="h-3 w-3" />
+                </Button>
+              </Link>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           <PingsTable initialPings={initialTablePings} monitorId={monitor.id} />

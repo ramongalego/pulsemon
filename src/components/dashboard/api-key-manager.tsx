@@ -100,7 +100,7 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ApiKeyItem[] }) {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div>
+          <div className="space-y-1.5">
             <CardTitle>API Keys</CardTitle>
             <CardDescription>
               Manage API keys for programmatic access to monitors

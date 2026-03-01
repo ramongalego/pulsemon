@@ -121,12 +121,22 @@ export async function checkMonitors(): Promise<CheckResult[]> {
         .limit(1);
 
       if (openIncident.length > 0) {
-        await db
-          .update(incidents)
-          .set({ resolvedAt: new Date(now) })
-          .where(eq(incidents.id, openIncident[0].id));
+        const incident = openIncident[0];
+        const resolvedIncident = { ...incident, resolvedAt: new Date(now) };
 
-        await dispatchAlerts(monitor, 'monitor.up', openIncident[0]);
+        // Alert first, resolve second — if alert fails, leave open for retry
+        try {
+          await dispatchAlerts(monitor, 'monitor.up', resolvedIncident);
+          await db
+            .update(incidents)
+            .set({ resolvedAt: new Date(now) })
+            .where(eq(incidents.id, incident.id));
+        } catch (err) {
+          console.error(
+            `Recovery alert failed for incident ${incident.id}, leaving open for retry:`,
+            err,
+          );
+        }
       }
 
       await db

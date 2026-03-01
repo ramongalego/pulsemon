@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { alertChannels } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { AlertChannelManager } from '@/components/dashboard/alert-channel-manager';
+import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
 
 export default async function AlertsPage() {
   const session = await auth();
@@ -15,16 +16,15 @@ export default async function AlertsPage() {
     .where(eq(alertChannels.userId, session.user.id))
     .orderBy(alertChannels.createdAt);
 
+  const plan = await getUserPlan(session.user.id);
+  const limits = getPlanLimits(plan);
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Alert Channels</h1>
-        <p className="text-muted-foreground">
-          Configure where you receive alerts when monitors go down
-        </p>
-      </div>
-
-      <AlertChannelManager initialChannels={channels} />
+      <AlertChannelManager
+        initialChannels={channels}
+        channelLimit={limits.alertChannels}
+      />
     </div>
   );
 }

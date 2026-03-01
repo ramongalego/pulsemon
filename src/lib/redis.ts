@@ -9,4 +9,5 @@ export const redis = new Redis({
 export const redisKeys = {
   lastPing: (monitorId: string) => `ping:${monitorId}:last`,
   slugToMonitor: (slug: string) => `slug:${slug}`,
+  pingRateLimit: (slug: string) => `rl:${slug}`,
 } as const;

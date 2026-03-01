@@ -24,7 +24,9 @@ import {
   CheckCircle2,
   PauseCircle,
   Plus,
+  ArrowUpRight,
 } from 'lucide-react';
+import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
 
 export default async function DashboardPage({
   searchParams,
@@ -88,6 +90,11 @@ export default async function DashboardPage({
     down: allMonitors.filter((m) => m.status === 'down').length,
     paused: allMonitors.filter((m) => m.isPaused).length,
   };
+
+  const plan = await getUserPlan(userId);
+  const limits = getPlanLimits(plan);
+  const atMonitorLimit =
+    limits.monitors !== Infinity && stats.total >= limits.monitors;
 
   const hasMonitors = stats.total > 0;
 
@@ -180,12 +187,32 @@ export default async function DashboardPage({
           <MonitorFilters />
           <Card>
             <CardHeader>
-              <CardTitle>Your Monitors</CardTitle>
-              <CardDescription>
-                {userMonitors.length === stats.total
-                  ? 'Select a monitor to view details and ping history'
-                  : `Showing ${userMonitors.length} of ${stats.total} monitors`}
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div className="space-y-1.5">
+                  <CardTitle>Your Monitors</CardTitle>
+                  <CardDescription>
+                    {userMonitors.length === stats.total
+                      ? 'Select a monitor to view details and ping history'
+                      : `Showing ${userMonitors.length} of ${stats.total} monitors`}
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`text-sm font-medium ${atMonitorLimit ? 'text-red-500' : 'text-muted-foreground'}`}
+                  >
+                    {stats.total}/
+                    {limits.monitors === Infinity ? '∞' : limits.monitors}
+                  </span>
+                  {atMonitorLimit && (
+                    <Link href="/pricing">
+                      <Button variant="outline" size="sm" className="gap-1">
+                        Upgrade
+                        <ArrowUpRight className="h-3 w-3" />
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               {userMonitors.length === 0 ? (

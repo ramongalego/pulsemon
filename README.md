@@ -14,14 +14,14 @@ npm install
 
 You need accounts for these services (all have generous free tiers):
 
-#### Neon (PostgreSQL)
+#### Neon (PostgreSQL) - DONE
 
 1. Go to [neon.tech](https://neon.tech) and create a free account
 2. Create a new project
 3. Copy the connection string (looks like `postgresql://user:pass@host/dbname?sslmode=require`)
 4. Set `DATABASE_URL` in `.env.local`
 
-#### Upstash (Redis + QStash)
+#### Upstash (Redis + QStash) - DONE
 
 1. Go to [upstash.com](https://upstash.com) and create a free account
 2. Create a Redis database, copy the REST URL and token
@@ -63,22 +63,14 @@ You need accounts for these services (all have generous free tiers):
 4. Set up a webhook endpoint pointing to `/api/webhooks/stripe`
 5. Set `STRIPE_WEBHOOK_SECRET` in `.env.local`
 
-### 3. Set up the database
+### 3. Set up the database - DONE
 
 ```bash
 npm run db:generate   # Generate migration files
 npm run db:migrate    # Apply migrations to your Neon database
 ```
 
-### 4. Run the dev server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000).
-
-### 5. Local testing
+### 4. Local testing
 
 The checker that detects missed pings is normally run by QStash in production. For local dev, use the dev-only endpoint:
 
@@ -141,6 +133,30 @@ await qstash.schedules.create({
 });
 ```
 
+### Set up QStash ping cleanup (daily)
+
+Old pings are automatically deleted based on each user's plan retention (free=7 days, starter=30 days, pro=90 days). This runs daily via QStash.
+
+**Option A: Upstash Console**
+
+1. Go to [console.upstash.com/qstash](https://console.upstash.com/qstash)
+2. Click "Create Schedule"
+3. Set the destination URL: `https://your-domain.com/api/webhooks/cleanup`
+4. Set the cron expression: `0 3 * * *` (daily at 3:00 AM UTC)
+5. Save
+
+**Option B: cURL**
+
+```bash
+curl -X POST https://qstash.upstash.io/v2/schedules \
+  -H "Authorization: Bearer YOUR_QSTASH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "destination": "https://your-domain.com/api/webhooks/cleanup",
+    "cron": "0 3 * * *"
+  }'
+```
+
 ### Set up Stripe webhook
 
 1. Go to [Stripe Dashboard > Webhooks](https://dashboard.stripe.com/webhooks)
@@ -153,19 +169,6 @@ await qstash.schedules.create({
 1. Go to [resend.com/domains](https://resend.com/domains)
 2. Add your production domain and follow the DNS verification steps
 3. Update the `from` address in `src/lib/auth.ts` from `onboarding@resend.dev` to `noreply@your-domain.com`
-
-## Commands
-
-| Command               | Description                      |
-| --------------------- | -------------------------------- |
-| `npm run dev`         | Start development server         |
-| `npm run build`       | Build for production             |
-| `npm test`            | Run tests                        |
-| `npm run test:watch`  | Run tests in watch mode          |
-| `npm run db:generate` | Generate Drizzle migrations      |
-| `npm run db:migrate`  | Apply migrations                 |
-| `npm run db:studio`   | Open Drizzle Studio (DB browser) |
-| `npm run lint`        | Run ESLint                       |
 
 ## Project Structure
 

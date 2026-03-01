@@ -84,10 +84,10 @@ User needs to:
 - [x] 15. Landing page with full SEO
 - [x] 16. Pricing page + Stripe integration
 - [x] 17. Documentation / quick-start guide
-- [x] 18. Status page for PulseMon itself
 
 ### Phase 5: Expansion (Later)
 
+- [ ] 18. PulseMon self-monitoring status page (dog fooding — requires internal monitors + public status pages feature)
 - [ ] 19. Team/org support
 - [ ] 20. Public status pages per user
 - [ ] 21. One-click Vercel/Render/Fly integrations

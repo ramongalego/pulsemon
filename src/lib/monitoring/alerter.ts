@@ -183,15 +183,32 @@ async function sendDiscordWebhook(webhookUrl: string, payload: AlertEvent) {
 async function sendCustomWebhook(
   url: string,
   payload: AlertEvent,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   secret?: string,
 ) {
-  // TODO: Use secret for HMAC signature header
-  await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
-  });
+  const body = JSON.stringify(payload);
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (secret) {
+    const encoder = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(secret),
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign'],
+    );
+    const signature = await crypto.subtle.sign(
+      'HMAC',
+      key,
+      encoder.encode(body),
+    );
+    const hex = Array.from(new Uint8Array(signature))
+      .map((b) => b.toString(16).padStart(2, '0'))
+      .join('');
+    headers['X-PulseMon-Signature'] = `sha256=${hex}`;
+  }
+
+  await fetch(url, { method: 'POST', headers, body });
 }

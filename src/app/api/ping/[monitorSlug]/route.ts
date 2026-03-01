@@ -36,6 +36,16 @@ async function handlePing(
 ) {
   const now = Date.now();
 
+  // Rate limit: max 1 ping per second per slug
+  const rlKey = redisKeys.pingRateLimit(monitorSlug);
+  const allowed = await redis.set(rlKey, 1, { nx: true, ex: 1 });
+  if (!allowed) {
+    return NextResponse.json(
+      { ok: false, error: 'Rate limited' },
+      { status: 429 },
+    );
+  }
+
   // Look up monitor (check Redis cache first)
   const cacheKey = redisKeys.slugToMonitor(monitorSlug);
   let monitor = await redis.get<MonitorCache>(cacheKey);
@@ -135,6 +145,8 @@ async function handlePing(
         });
 
         // Issue #1: Resolve open incidents and send recovery alerts on success
+        // Alert first, resolve second — if alerts fail, leave the incident
+        // open so the checker can retry on its next pass.
         if (pingStatus === 'success') {
           const openIncidents = await db
             .select()
@@ -147,17 +159,6 @@ async function handlePing(
             );
 
           if (openIncidents.length > 0) {
-            // Resolve all open incidents
-            await db
-              .update(incidents)
-              .set({ resolvedAt: new Date(now) })
-              .where(
-                and(
-                  eq(incidents.monitorId, monitor.id),
-                  isNull(incidents.resolvedAt),
-                ),
-              );
-
             // Fetch full monitor for alert dispatch
             const [fullMonitor] = await db
               .select()
@@ -171,11 +172,25 @@ async function handlePing(
                   ...incident,
                   resolvedAt: new Date(now),
                 };
-                await dispatchAlerts(
-                  fullMonitor as Monitor,
-                  'monitor.up',
-                  resolvedIncident,
-                );
+
+                // Dispatch recovery alert — only resolve if it succeeds
+                try {
+                  await dispatchAlerts(
+                    fullMonitor as Monitor,
+                    'monitor.up',
+                    resolvedIncident,
+                  );
+
+                  await db
+                    .update(incidents)
+                    .set({ resolvedAt: new Date(now) })
+                    .where(eq(incidents.id, incident.id));
+                } catch (alertErr) {
+                  console.error(
+                    `Recovery alert failed for incident ${incident.id}, leaving open for retry:`,
+                    alertErr,
+                  );
+                }
               }
             }
           }

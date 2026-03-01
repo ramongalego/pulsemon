@@ -8,7 +8,7 @@ export const createMonitorSchema = z.object({
     .max(100)
     .regex(/^[a-z0-9-]+$/),
   expectedInterval: z.number().int().min(10),
-  gracePeriod: z.number().int().min(0).default(300),
+  gracePeriod: z.number().int().min(0).optional(),
   tags: z.array(z.string()).default([]),
 });
 
