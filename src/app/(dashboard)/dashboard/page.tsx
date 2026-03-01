@@ -110,7 +110,7 @@ export default async function DashboardPage({
         </div>
         <Link href="/dashboard/monitors/new">
           <Button>
-            <Plus className="h-4 w-4" />
+            <Plus className="mr-[-4] h-4 w-4" />
             New Monitor
           </Button>
         </Link>

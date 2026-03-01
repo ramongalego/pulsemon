@@ -151,7 +151,7 @@ export function UpgradeModal({
                     : 'bg-green-500/10 text-green-600'
                 }`}
               >
-                Save 22%
+                Save up to 22%
               </span>
             </button>
           </div>
@@ -192,15 +192,18 @@ export function UpgradeModal({
                 </div>
 
                 {/* Price */}
-                <div className="mb-4">
-                  <span className="text-3xl font-bold">
-                    {formatPrice(plan, billing)}
-                  </span>
-                  <span className="text-muted-foreground text-sm">/mo</span>
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-baseline gap-0.5">
+                    <span className="text-3xl font-bold">
+                      {formatPrice(plan, billing)}
+                    </span>
+                    <span className="text-muted-foreground text-sm">/mo</span>
+                  </div>
                   {billing === 'yearly' && plan.yearly > 0 && (
-                    <p className="mt-0.5 text-xs text-green-600">
-                      ${plan.yearly}/yr &middot; Save {savingsPercent(plan)}%
-                    </p>
+                    <div className="text-right text-xs text-green-600">
+                      <p>${plan.yearly}/yr</p>
+                      <p>Save {savingsPercent(plan)}%</p>
+                    </div>
                   )}
                 </div>
 

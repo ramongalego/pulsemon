@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import {
   Activity,
   Bell,
+  BookOpen,
   LayoutDashboard,
   Link2,
   Settings,
@@ -32,6 +33,11 @@ const navItems = [
     icon: Link2,
   },
   {
+    label: 'Docs',
+    href: '/dashboard/docs',
+    icon: BookOpen,
+  },
+  {
     label: 'Settings',
     href: '/dashboard/settings',
     icon: Settings,
@@ -43,10 +49,10 @@ export function Sidebar() {
 
   return (
     <aside className="bg-card flex h-full w-64 flex-col border-r">
-      <div className="flex h-14 items-center gap-2 px-4">
+      <Link href="/dashboard" className="flex h-14 items-center gap-2 px-4">
         <Activity className="text-primary h-6 w-6" />
         <span className="text-lg font-semibold">PulseMon</span>
-      </div>
+      </Link>
       <Separator />
       <nav className="flex-1 space-y-1 p-3">
         {navItems.map((item) => {

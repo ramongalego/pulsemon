@@ -52,19 +52,11 @@ export default async function SettingsPage() {
           <CardTitle>Profile</CardTitle>
           <CardDescription>Your account information</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent>
           <div className="space-y-2">
             <Label>Email</Label>
             <Input value={session.user.email ?? ''} disabled />
           </div>
-          <div className="space-y-2">
-            <Label>Name</Label>
-            <Input
-              defaultValue={session.user.name ?? ''}
-              placeholder="Your name"
-            />
-          </div>
-          <Button>Save</Button>
         </CardContent>
       </Card>
 

@@ -4,9 +4,12 @@ import { NextResponse } from 'next/server';
 export default auth((req) => {
   const { pathname } = req.nextUrl;
 
-  // Redirect logged-in users from landing page to dashboard
+  // Redirect logged-in users from marketing pages to dashboard
   if (pathname === '/' && req.auth) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
+  }
+  if (pathname === '/docs' && req.auth) {
+    return NextResponse.redirect(new URL('/dashboard/docs', req.url));
   }
 
   // Protect dashboard routes — redirect unauthenticated users to login
@@ -18,5 +21,5 @@ export default auth((req) => {
 });
 
 export const config = {
-  matcher: ['/', '/dashboard/:path*'],
+  matcher: ['/', '/docs', '/dashboard/:path*'],
 };

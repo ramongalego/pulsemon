@@ -118,7 +118,7 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ApiKeyItem[] }) {
           >
             <DialogTrigger asChild>
               <Button size="sm">
-                <Plus className="h-4 w-4" />
+                <Plus className="mr-[-4] h-4 w-4" />
                 Create Key
               </Button>
             </DialogTrigger>

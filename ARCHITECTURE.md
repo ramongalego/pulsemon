@@ -286,5 +286,5 @@ These are listed in CLAUDE.md Phase 5 and are not built:
 
 ## Known TODOs in Code
 
-- **Webhook signature verification docs** — HMAC signing is implemented (`X-PulseMon-Signature: sha256=<hex>`) but the docs/quick-start page needs verification snippets in Node.js and Python so users can actually use it
+- ~~**Webhook signature verification docs**~~ — Done. Node.js and Python verification snippets added to `/docs` page.
 - **Plan downgrade handling** — if a user downgrades, existing monitors/channels beyond the new limit remain functional (no retroactive enforcement)

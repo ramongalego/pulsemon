@@ -24,6 +24,7 @@ import { Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Monitor } from '@/lib/db/schema';
 import { PlanLimitDialog } from '@/components/dashboard/plan-limit-dialog';
+import { defaultGracePeriod } from '@/lib/monitoring/constants';
 
 const INTERVAL_PRESETS = [
   { label: 'Every minute', seconds: 60 },
@@ -170,6 +171,21 @@ export function MonitorConfigEditor({ monitor }: { monitor: Monitor }) {
               seconds
             </span>
           </div>
+          {Number(gracePeriod) < defaultGracePeriod(Number(interval)) && (
+            <p className="text-muted-foreground text-xs">
+              Your grace period ({gracePeriod}s) is low for this interval.
+              Suggested: {defaultGracePeriod(Number(interval))}s{' '}
+              <button
+                type="button"
+                className="text-primary hover:underline"
+                onClick={() =>
+                  setGracePeriod(String(defaultGracePeriod(Number(interval))))
+                }
+              >
+                Apply suggestion
+              </button>
+            </p>
+          )}
         </div>
         <div className="space-y-2">
           <Label htmlFor="config-tags">Tags (comma-separated)</Label>
@@ -207,7 +223,7 @@ export function MonitorConfigEditor({ monitor }: { monitor: Monitor }) {
             size="sm"
             onClick={() => setDeleteOpen(true)}
           >
-            <Trash2 className="h-4 w-4" />
+            <Trash2 className="mr-[-4]h-4 w-4" />
             Delete
           </Button>
         </div>

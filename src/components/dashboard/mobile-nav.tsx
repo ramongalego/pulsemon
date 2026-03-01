@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import {
   Activity,
   Bell,
+  BookOpen,
   LayoutDashboard,
   Link2,
   Menu,
@@ -28,6 +29,7 @@ const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Alerts', href: '/dashboard/alerts', icon: Bell },
   { label: 'Integrations', href: '/dashboard/integrations', icon: Link2 },
+  { label: 'Docs', href: '/dashboard/docs', icon: BookOpen },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
@@ -45,8 +47,14 @@ export function MobileNav() {
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0">
         <SheetHeader className="flex h-14 flex-row items-center gap-2 px-4">
-          <Activity className="text-primary h-6 w-6" />
-          <SheetTitle className="text-lg font-semibold">PulseMon</SheetTitle>
+          <Link
+            href="/dashboard"
+            onClick={() => setOpen(false)}
+            className="flex items-center gap-2"
+          >
+            <Activity className="text-primary h-6 w-6" />
+            <SheetTitle className="text-lg font-semibold">PulseMon</SheetTitle>
+          </Link>
         </SheetHeader>
         <Separator />
         <nav className="flex-1 space-y-1 p-3">

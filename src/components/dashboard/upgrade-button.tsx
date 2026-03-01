@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { UpgradeModal } from '@/components/dashboard/upgrade-modal';
-import { ArrowUpRight } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import type { Plan } from '@/types';
 
 export function UpgradeButton({
@@ -27,12 +27,8 @@ export function UpgradeButton({
         className="gap-1"
         onClick={() => setOpen(true)}
       >
-        {children ?? (
-          <>
-            Upgrade
-            <ArrowUpRight className="h-3 w-3" />
-          </>
-        )}
+        <Sparkles className="h-3.5 w-3.5" />
+        {children ?? 'Upgrade'}
       </Button>
       <UpgradeModal
         open={open}
