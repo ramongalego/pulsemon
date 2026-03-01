@@ -32,6 +32,8 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     pingHistoryDays: 7,
     allowedChannelTypes: ['email', 'slack', 'discord'],
     maxNonEmailTypes: 1,
+    statusPages: 1,
+    monitorsPerStatusPage: 10,
   },
   starter: {
     monitors: 100,
@@ -41,6 +43,8 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     pingHistoryDays: 30,
     allowedChannelTypes: ['email', 'slack', 'discord'],
     maxNonEmailTypes: Infinity,
+    statusPages: 2,
+    monitorsPerStatusPage: 25,
   },
   pro: {
     monitors: Infinity,
@@ -50,6 +54,8 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     pingHistoryDays: 90,
     allowedChannelTypes: ['email', 'slack', 'discord', 'webhook'],
     maxNonEmailTypes: Infinity,
+    statusPages: 5,
+    monitorsPerStatusPage: Infinity,
   },
 };
 

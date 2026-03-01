@@ -75,6 +75,8 @@ export type PlanLimits = {
   pingHistoryDays: number;
   allowedChannelTypes: AlertChannelType[];
   maxNonEmailTypes: number;
+  statusPages: number;
+  monitorsPerStatusPage: number;
 };
 
 // Interval presets for monitor creation

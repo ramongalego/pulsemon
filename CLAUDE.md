@@ -89,7 +89,7 @@ User needs to:
 
 - [ ] 18. PulseMon self-monitoring status page (dog fooding — requires internal monitors + public status pages feature)
 - [ ] 19. Team/org support
-- [ ] 20. Public status pages per user
+- [x] 20. Public status pages per user
 - ~~21. One-click Vercel/Render/Fly integrations~~ (deprioritised)
 - ~~22. SDK packages (npm, pip)~~ (deprioritised)
 

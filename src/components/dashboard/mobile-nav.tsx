@@ -7,6 +7,7 @@ import {
   Activity,
   Bell,
   BookOpen,
+  Globe,
   LayoutDashboard,
   Menu,
   Settings,
@@ -27,6 +28,7 @@ import { useState } from 'react';
 const navItems = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Alerts', href: '/dashboard/alerts', icon: Bell },
+  { label: 'Status Pages', href: '/dashboard/status-pages', icon: Globe },
   { label: 'Docs', href: '/dashboard/docs', icon: BookOpen },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];

@@ -7,6 +7,7 @@ import {
   Activity,
   Bell,
   BookOpen,
+  Globe,
   LayoutDashboard,
   Settings,
   LogOut,
@@ -25,6 +26,11 @@ const navItems = [
     label: 'Alerts',
     href: '/dashboard/alerts',
     icon: Bell,
+  },
+  {
+    label: 'Status Pages',
+    href: '/dashboard/status-pages',
+    icon: Globe,
   },
   {
     label: 'Docs',

@@ -199,6 +199,51 @@ export const apiKeys = pgTable(
   (table) => [index('api_keys_user_id_idx').on(table.userId)],
 );
 
+// Status Pages
+export const statusPages = pgTable(
+  'status_pages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    slug: text('slug').unique().notNull(),
+    description: text('description'),
+    customDomain: text('custom_domain').unique(),
+    isPublic: boolean('is_public').default(true).notNull(),
+    showOverallUptime: boolean('show_overall_uptime').default(true).notNull(),
+    showIncidentHistory: boolean('show_incident_history')
+      .default(true)
+      .notNull(),
+    logoUrl: text('logo_url'),
+    brandColor: text('brand_color'),
+    createdAt: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [index('status_pages_user_id_idx').on(table.userId)],
+);
+
+// Status Page <-> Monitor join table
+export const statusPageMonitors = pgTable(
+  'status_page_monitors',
+  {
+    statusPageId: uuid('status_page_id')
+      .notNull()
+      .references(() => statusPages.id, { onDelete: 'cascade' }),
+    monitorId: uuid('monitor_id')
+      .notNull()
+      .references(() => monitors.id, { onDelete: 'cascade' }),
+    displayName: text('display_name'),
+    sortOrder: integer('sort_order').default(0).notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.statusPageId, table.monitorId] })],
+);
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -212,3 +257,7 @@ export type Incident = typeof incidents.$inferSelect;
 export type NewIncident = typeof incidents.$inferInsert;
 export type ApiKey = typeof apiKeys.$inferSelect;
 export type NewApiKey = typeof apiKeys.$inferInsert;
+export type StatusPage = typeof statusPages.$inferSelect;
+export type NewStatusPage = typeof statusPages.$inferInsert;
+export type StatusPageMonitor = typeof statusPageMonitors.$inferSelect;
+export type NewStatusPageMonitor = typeof statusPageMonitors.$inferInsert;
