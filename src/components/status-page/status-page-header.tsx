@@ -1,4 +1,5 @@
 import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import { ThemeToggle } from '@/components/shared/theme-toggle';
 
 const STATUS_CONFIG = {
   operational: {
@@ -49,7 +50,10 @@ export function StatusPageHeader({
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+          <ThemeToggle />
+        </div>
         {description && (
           <p className="text-muted-foreground mt-1">{description}</p>
         )}
