@@ -24,6 +24,7 @@ export default async function AlertsPage() {
       <AlertChannelManager
         initialChannels={channels}
         channelLimit={limits.alertChannels}
+        currentPlan={plan}
       />
     </div>
   );

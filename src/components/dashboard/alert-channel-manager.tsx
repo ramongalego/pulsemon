@@ -29,17 +29,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import {
-  ArrowUpRight,
-  Bell,
-  Mail,
-  MessageSquare,
-  Plus,
-  Trash2,
-  Webhook,
-} from 'lucide-react';
-import Link from 'next/link';
+import { Bell, Mail, MessageSquare, Plus, Trash2, Webhook } from 'lucide-react';
 import { toast } from 'sonner';
+import { UpgradeModal } from '@/components/dashboard/upgrade-modal';
 import type { AlertChannel } from '@/lib/db/schema';
 import { PlanLimitDialog } from '@/components/dashboard/plan-limit-dialog';
 
@@ -90,15 +82,18 @@ type ChannelType = 'email' | 'slack' | 'discord' | 'webhook';
 export function AlertChannelManager({
   initialChannels,
   channelLimit,
+  currentPlan = 'free',
 }: {
   initialChannels: AlertChannel[];
   channelLimit: number;
+  currentPlan?: 'free' | 'starter' | 'pro';
 }) {
   const [channels, setChannels] = useState(initialChannels);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [planLimitMessage, setPlanLimitMessage] = useState<string | null>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // Form state
   const [channelType, setChannelType] = useState<ChannelType>('email');
@@ -164,6 +159,7 @@ export function AlertChannelManager({
       const json = await res.json();
       if (json.error) {
         if (json.error.code === 'PLAN_LIMIT') {
+          setDialogOpen(false);
           setPlanLimitMessage(json.error.message);
         } else {
           toast.error(json.error.message);
@@ -222,7 +218,7 @@ export function AlertChannelManager({
         >
           <DialogTrigger asChild>
             <Button>
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="h-4 w-4" />
               Add Channel
             </Button>
           </DialogTrigger>
@@ -373,12 +369,14 @@ export function AlertChannelManager({
                 {channelLimit === Infinity ? '∞' : channelLimit}
               </span>
               {atLimit && (
-                <Link href="/pricing">
-                  <Button variant="outline" size="sm" className="gap-1">
-                    Upgrade
-                    <ArrowUpRight className="h-3 w-3" />
-                  </Button>
-                </Link>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1"
+                  onClick={() => setUpgradeOpen(true)}
+                >
+                  Upgrade
+                </Button>
               )}
             </div>
           </div>
@@ -442,6 +440,12 @@ export function AlertChannelManager({
             if (!open) setPlanLimitMessage(null);
           }}
           message={planLimitMessage ?? ''}
+          currentPlan={currentPlan}
+        />
+        <UpgradeModal
+          open={upgradeOpen}
+          onOpenChange={setUpgradeOpen}
+          currentPlan={currentPlan}
         />
       </Card>
     </>

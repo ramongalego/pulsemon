@@ -24,8 +24,8 @@ import {
   CheckCircle2,
   PauseCircle,
   Plus,
-  ArrowUpRight,
 } from 'lucide-react';
+import { UpgradeButton } from '@/components/dashboard/upgrade-button';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
 
 export default async function DashboardPage({
@@ -110,7 +110,7 @@ export default async function DashboardPage({
         </div>
         <Link href="/dashboard/monitors/new">
           <Button>
-            <Plus className="mr-2 h-4 w-4" />
+            <Plus className="h-4 w-4" />
             New Monitor
           </Button>
         </Link>
@@ -203,14 +203,7 @@ export default async function DashboardPage({
                     {stats.total}/
                     {limits.monitors === Infinity ? '∞' : limits.monitors}
                   </span>
-                  {atMonitorLimit && (
-                    <Link href="/pricing">
-                      <Button variant="outline" size="sm" className="gap-1">
-                        Upgrade
-                        <ArrowUpRight className="h-3 w-3" />
-                      </Button>
-                    </Link>
-                  )}
+                  {atMonitorLimit && <UpgradeButton currentPlan={plan} />}
                 </div>
               </div>
             </CardHeader>

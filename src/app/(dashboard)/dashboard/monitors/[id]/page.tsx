@@ -20,7 +20,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { StatusBadge } from '@/components/shared/status-badge';
 import { RelativeTime } from '@/components/shared/relative-time';
-import { ArrowLeft, AlertTriangle, ArrowUpRight } from 'lucide-react';
+import { ArrowLeft, AlertTriangle } from 'lucide-react';
+import { UpgradeButton } from '@/components/dashboard/upgrade-button';
 import Link from 'next/link';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
 import { CopyButton } from '@/components/dashboard/copy-button';
@@ -316,12 +317,9 @@ export default async function MonitorDetailPage({
               </CardDescription>
             </div>
             {hasHiddenPings && (
-              <Link href="/pricing">
-                <Button variant="outline" size="sm" className="gap-1">
-                  Upgrade for more history
-                  <ArrowUpRight className="h-3 w-3" />
-                </Button>
-              </Link>
+              <UpgradeButton currentPlan={plan}>
+                Upgrade for more history
+              </UpgradeButton>
             )}
           </div>
         </CardHeader>

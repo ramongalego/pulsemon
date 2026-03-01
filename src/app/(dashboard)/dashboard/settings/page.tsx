@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ApiKeyManager } from '@/components/dashboard/api-key-manager';
+import { UpgradeButton } from '@/components/dashboard/upgrade-button';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
 
 export default async function SettingsPage() {
@@ -87,7 +88,11 @@ export default async function SettingsPage() {
             monitors, {limits.checkInterval}s check intervals, and{' '}
             {limits.pingHistoryDays} days of ping history.
           </p>
-          {plan === 'free' && <Button variant="outline">Upgrade Plan</Button>}
+          {plan === 'free' && (
+            <UpgradeButton currentPlan={plan} variant="outline" size="default">
+              Upgrade Plan
+            </UpgradeButton>
+          )}
         </CardContent>
       </Card>
 
