@@ -1,36 +1,200 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PulseMon
 
-## Getting Started
+Cron job and heartbeat monitoring for developers. Know the second your cron jobs stop running.
 
-First, run the development server:
+## Quick Start
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Set up external services
+
+You need accounts for these services (all have generous free tiers):
+
+#### Neon (PostgreSQL)
+
+1. Go to [neon.tech](https://neon.tech) and create a free account
+2. Create a new project
+3. Copy the connection string (looks like `postgresql://user:pass@host/dbname?sslmode=require`)
+4. Set `DATABASE_URL` in `.env.local`
+
+#### Upstash (Redis + QStash)
+
+1. Go to [upstash.com](https://upstash.com) and create a free account
+2. Create a Redis database, copy the REST URL and token
+3. Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` in `.env.local`
+4. Go to QStash in the Upstash console, copy the signing keys
+5. Set `QSTASH_CURRENT_SIGNING_KEY` and `QSTASH_NEXT_SIGNING_KEY` in `.env.local`
+
+#### Auth.js (Authentication)
+
+1. Generate a secret: `openssl rand -base64 32`
+2. Set `AUTH_SECRET` in `.env.local`
+
+##### GitHub OAuth
+
+1. Go to [github.com/settings/developers](https://github.com/settings/developers)
+2. Create a new OAuth App
+   - Homepage URL: `http://localhost:3000`
+   - Callback URL: `http://localhost:3000/api/auth/callback/github`
+3. Set `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET` in `.env.local`
+
+##### Google OAuth
+
+1. Go to [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
+2. Create an OAuth 2.0 Client ID (Web application)
+   - Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+3. Set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` in `.env.local`
+
+#### Resend (Email)
+
+1. Go to [resend.com](https://resend.com) and create a free account
+2. Create an API key
+3. Set `RESEND_API_KEY` in `.env.local`
+
+#### Stripe (Payments)
+
+1. Go to [stripe.com](https://stripe.com) and create an account
+2. Get your test mode secret key from the dashboard
+3. Set `STRIPE_SECRET_KEY` in `.env.local`
+4. Set up a webhook endpoint pointing to `/api/webhooks/stripe`
+5. Set `STRIPE_WEBHOOK_SECRET` in `.env.local`
+
+### 3. Set up the database
+
+```bash
+npm run db:generate   # Generate migration files
+npm run db:migrate    # Apply migrations to your Neon database
+```
+
+### 4. Run the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 5. Local testing
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The checker that detects missed pings is normally run by QStash in production. For local dev, use the dev-only endpoint:
 
-## Learn More
+```bash
+# Send a ping
+curl http://localhost:3000/api/ping/your-slug
 
-To learn more about Next.js, take a look at the following resources:
+# Manually trigger the checker (simulates what QStash does)
+curl -X POST http://localhost:3000/api/dev/check
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Or use the test script (sends pings, waits, triggers checker)
+./scripts/test-failure.sh your-slug
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Production Deployment
 
-## Deploy on Vercel
+### Deploy to Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Push your repo to GitHub
+2. Import the project in [vercel.com](https://vercel.com)
+3. Add all environment variables from `.env.local` to Vercel's project settings
+4. Update `NEXT_PUBLIC_APP_URL` to your production domain (e.g. `https://pulsemon.dev`)
+5. Update OAuth callback URLs in GitHub/Google to use your production domain
+6. Deploy
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Set up QStash scheduled checks
+
+This is the critical piece — QStash calls your checker endpoint every 60 seconds to detect missed pings and fire alerts.
+
+**Option A: Upstash Console (easiest)**
+
+1. Go to [console.upstash.com/qstash](https://console.upstash.com/qstash)
+2. Click "Create Schedule"
+3. Set the destination URL: `https://your-domain.com/api/webhooks/qstash`
+4. Set the cron expression: `* * * * *` (every minute)
+5. Save
+
+**Option B: cURL**
+
+```bash
+curl -X POST https://qstash.upstash.io/v2/schedules \
+  -H "Authorization: Bearer YOUR_QSTASH_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "destination": "https://your-domain.com/api/webhooks/qstash",
+    "cron": "* * * * *"
+  }'
+```
+
+**Option C: Upstash SDK**
+
+```typescript
+import { Client } from '@upstash/qstash';
+
+const qstash = new Client({ token: process.env.QSTASH_TOKEN! });
+
+await qstash.schedules.create({
+  destination: 'https://your-domain.com/api/webhooks/qstash',
+  cron: '* * * * *',
+});
+```
+
+### Set up Stripe webhook
+
+1. Go to [Stripe Dashboard > Webhooks](https://dashboard.stripe.com/webhooks)
+2. Add endpoint: `https://your-domain.com/api/webhooks/stripe`
+3. Select events: `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`
+4. Copy the signing secret and set `STRIPE_WEBHOOK_SECRET` in Vercel
+
+### Verify domain for Resend (email)
+
+1. Go to [resend.com/domains](https://resend.com/domains)
+2. Add your production domain and follow the DNS verification steps
+3. Update the `from` address in `src/lib/auth.ts` from `onboarding@resend.dev` to `noreply@your-domain.com`
+
+## Commands
+
+| Command               | Description                      |
+| --------------------- | -------------------------------- |
+| `npm run dev`         | Start development server         |
+| `npm run build`       | Build for production             |
+| `npm test`            | Run tests                        |
+| `npm run test:watch`  | Run tests in watch mode          |
+| `npm run db:generate` | Generate Drizzle migrations      |
+| `npm run db:migrate`  | Apply migrations                 |
+| `npm run db:studio`   | Open Drizzle Studio (DB browser) |
+| `npm run lint`        | Run ESLint                       |
+
+## Project Structure
+
+```
+src/
+  app/
+    (marketing)/     - Landing page, pricing (public)
+    (dashboard)/     - App dashboard (authenticated)
+    api/
+      ping/[slug]    - Heartbeat endpoint (Edge Runtime)
+      monitors/      - Monitor CRUD API
+      webhooks/      - Stripe + QStash handlers
+      auth/          - Auth.js routes
+  components/
+    ui/              - shadcn/ui components
+    dashboard/       - Dashboard components
+    marketing/       - Landing page components
+    shared/          - Shared components
+  lib/
+    db/              - Drizzle schema + connection
+    monitoring/      - Checker logic, alerter, constants
+    auth.ts          - Auth.js config
+    redis.ts         - Upstash Redis client
+    stripe.ts        - Stripe client
+    resend.ts        - Resend email client
+```
+
+## Architecture
+
+- **Ping endpoint** runs on Vercel Edge Runtime. Writes to Upstash Redis for speed, syncs to Postgres in the background.
+- **QStash** runs a scheduled check every 60 seconds. Compares last ping time against expected intervals and fires alerts when monitors miss their window.
+- **Alerts** dispatch to email (Resend), Slack, Discord, and custom webhooks. Escalation: immediate, 1h, 6h, 24h.
