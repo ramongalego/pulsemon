@@ -8,7 +8,6 @@ import { MonitorFilters } from '@/components/dashboard/monitor-filters';
 import { PauseResumeButton } from '@/components/dashboard/pause-resume-button';
 import { eq, and, ilike, or, asc, desc } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
-import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
@@ -25,8 +24,8 @@ import {
   PauseCircle,
   Plus,
 } from 'lucide-react';
-import { UpgradeButton } from '@/components/dashboard/upgrade-button';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
+import { PlanLimitButton } from '@/components/dashboard/plan-limit-button';
 
 export default async function DashboardPage({
   searchParams,
@@ -108,12 +107,15 @@ export default async function DashboardPage({
             Track your cron jobs and background tasks
           </p>
         </div>
-        <Link href="/dashboard/monitors/new">
-          <Button>
-            <Plus className="mr-[-4] h-4 w-4" />
-            New Monitor
-          </Button>
-        </Link>
+        <PlanLimitButton
+          href="/dashboard/monitors/new"
+          atLimit={atMonitorLimit}
+          currentPlan={plan}
+          limitMessage="You've reached your monitor limit. Upgrade your plan to add more."
+        >
+          <Plus className="mr-[-4] h-4 w-4" />
+          New Monitor
+        </PlanLimitButton>
       </div>
 
       {/* Stats cards */}
@@ -174,12 +176,15 @@ export default async function DashboardPage({
               Add a monitor for your cron job or background task. We&apos;ll
               alert you the second it stops running.
             </CardDescription>
-            <Link href="/dashboard/monitors/new">
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Monitor
-              </Button>
-            </Link>
+            <PlanLimitButton
+              href="/dashboard/monitors/new"
+              atLimit={atMonitorLimit}
+              currentPlan={plan}
+              limitMessage="You've reached your monitor limit. Upgrade your plan to add more."
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Create Monitor
+            </PlanLimitButton>
           </CardContent>
         </Card>
       ) : (
@@ -203,7 +208,6 @@ export default async function DashboardPage({
                     {stats.total}/
                     {limits.monitors === Infinity ? '∞' : limits.monitors}
                   </span>
-                  {atMonitorLimit && <UpgradeButton currentPlan={plan} />}
                 </div>
               </div>
             </CardHeader>

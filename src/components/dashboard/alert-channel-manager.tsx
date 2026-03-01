@@ -19,7 +19,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   Select,
@@ -31,9 +30,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Bell, Mail, MessageSquare, Plus, Trash2, Webhook } from 'lucide-react';
 import { toast } from 'sonner';
-import { UpgradeButton } from '@/components/dashboard/upgrade-button';
 import type { AlertChannel } from '@/lib/db/schema';
 import { PlanLimitDialog } from '@/components/dashboard/plan-limit-dialog';
+import { UpgradeModal } from '@/components/dashboard/upgrade-modal';
 
 const CHANNEL_ICONS = {
   email: Mail,
@@ -93,6 +92,7 @@ export function AlertChannelManager({
   const [isCreating, setIsCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [planLimitMessage, setPlanLimitMessage] = useState<string | null>(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // Form state
   const [channelType, setChannelType] = useState<ChannelType>('email');
@@ -208,6 +208,18 @@ export function AlertChannelManager({
             Configure where you receive alerts when monitors go down
           </p>
         </div>
+        <Button
+          onClick={() => {
+            if (atLimit) {
+              setUpgradeOpen(true);
+            } else {
+              setDialogOpen(true);
+            }
+          }}
+        >
+          <Plus className="mr-[-4] h-4 w-4" />
+          Add Channel
+        </Button>
         <Dialog
           open={dialogOpen}
           onOpenChange={(open) => {
@@ -215,12 +227,6 @@ export function AlertChannelManager({
             if (!open) resetForm();
           }}
         >
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-[-4] h-4 w-4" />
-              Add Channel
-            </Button>
-          </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add Alert Channel</DialogTitle>
@@ -367,7 +373,6 @@ export function AlertChannelManager({
                 {channels.length}/
                 {channelLimit === Infinity ? '∞' : channelLimit}
               </span>
-              {atLimit && <UpgradeButton currentPlan={currentPlan} />}
             </div>
           </div>
         </CardHeader>
@@ -431,6 +436,12 @@ export function AlertChannelManager({
           }}
           message={planLimitMessage ?? ''}
           currentPlan={currentPlan}
+        />
+        <UpgradeModal
+          open={upgradeOpen}
+          onOpenChange={setUpgradeOpen}
+          currentPlan={currentPlan}
+          message="You've reached your alert channel limit. Upgrade your plan to add more."
         />
       </Card>
     </>

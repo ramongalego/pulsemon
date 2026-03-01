@@ -6,6 +6,7 @@ import type { Plan } from '@/types';
 export function PlanLimitDialog({
   open,
   onOpenChange,
+  message,
   currentPlan = 'free',
 }: {
   open: boolean;
@@ -18,6 +19,7 @@ export function PlanLimitDialog({
       open={open}
       onOpenChange={onOpenChange}
       currentPlan={currentPlan}
+      message={message}
     />
   );
 }

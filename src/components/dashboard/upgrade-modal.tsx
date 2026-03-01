@@ -74,12 +74,14 @@ interface UpgradeModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentPlan: Plan;
+  message?: string;
 }
 
 export function UpgradeModal({
   open,
   onOpenChange,
   currentPlan,
+  message,
 }: UpgradeModalProps) {
   const [billing, setBilling] = useState<Billing>('monthly');
 
@@ -120,7 +122,7 @@ export function UpgradeModal({
             Upgrade Your Plan
           </h2>
           <p className="text-muted-foreground mt-1 text-sm">
-            Get more monitors, faster checks, and longer history
+            {message || 'Get more monitors, faster checks, and longer history'}
           </p>
 
           {/* Billing toggle */}
