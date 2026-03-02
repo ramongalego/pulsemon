@@ -9,6 +9,7 @@ import {
   BookOpen,
   Globe,
   LayoutDashboard,
+  MessageCircle,
   Settings,
   LogOut,
 } from 'lucide-react';
@@ -16,7 +17,12 @@ import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
-const navItems = [
+const navItems: {
+  label: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  external?: boolean;
+}[] = [
   {
     label: 'Dashboard',
     href: '/dashboard',
@@ -38,6 +44,12 @@ const navItems = [
     icon: BookOpen,
   },
   {
+    label: 'Feedback',
+    href: 'mailto:raygaledev@gmail.com',
+    icon: MessageCircle,
+    external: true,
+  },
+  {
     label: 'Settings',
     href: '/dashboard/settings',
     icon: Settings,
@@ -57,19 +69,22 @@ export function Sidebar() {
       <nav className="flex-1 space-y-1 p-3">
         {navItems.map((item) => {
           const isActive =
-            pathname === item.href ||
-            (item.href !== '/dashboard' && pathname.startsWith(item.href));
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-              )}
-            >
+            !item.external &&
+            (pathname === item.href ||
+              (item.href !== '/dashboard' && pathname.startsWith(item.href)));
+          const className = cn(
+            'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+            isActive
+              ? 'bg-primary/10 text-primary'
+              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+          );
+          return item.external ? (
+            <a key={item.label} href={item.href} className={className}>
+              <item.icon className="h-4 w-4" />
+              {item.label}
+            </a>
+          ) : (
+            <Link key={item.href} href={item.href} className={className}>
               <item.icon className="h-4 w-4" />
               {item.label}
             </Link>

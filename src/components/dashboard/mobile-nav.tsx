@@ -10,6 +10,7 @@ import {
   Globe,
   LayoutDashboard,
   Menu,
+  MessageCircle,
   Settings,
   LogOut,
 } from 'lucide-react';
@@ -25,11 +26,22 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { useState } from 'react';
 
-const navItems = [
+const navItems: {
+  label: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  external?: boolean;
+}[] = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Alerts', href: '/dashboard/alerts', icon: Bell },
   { label: 'Status Pages', href: '/dashboard/status-pages', icon: Globe },
   { label: 'Docs', href: '/dashboard/docs', icon: BookOpen },
+  {
+    label: 'Feedback',
+    href: 'mailto:raygaledev@gmail.com',
+    icon: MessageCircle,
+    external: true,
+  },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
@@ -60,19 +72,31 @@ export function MobileNav() {
         <nav className="flex-1 space-y-1 p-3">
           {navItems.map((item) => {
             const isActive =
-              pathname === item.href ||
-              (item.href !== '/dashboard' && pathname.startsWith(item.href));
-            return (
+              !item.external &&
+              (pathname === item.href ||
+                (item.href !== '/dashboard' && pathname.startsWith(item.href)));
+            const className = cn(
+              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              isActive
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+            );
+            return item.external ? (
+              <a
+                key={item.label}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={className}
+              >
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </a>
+            ) : (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                  isActive
-                    ? 'bg-primary/10 text-primary'
-                    : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
-                )}
+                className={className}
               >
                 <item.icon className="h-4 w-4" />
                 {item.label}

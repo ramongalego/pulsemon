@@ -192,7 +192,7 @@ export function UpgradeModal({
         </div>
 
         {billing !== 'lifetime' ? (
-          <div className="grid min-h-[420px] gap-4 p-6 md:grid-cols-3 md:h-[420px]">
+          <div className="grid min-h-[420px] gap-4 p-6 md:h-[420px] md:grid-cols-3">
             {PLANS.map((plan) => {
               const isCurrent = plan.key === currentPlan;
               const isRecommended = plan.key === recommended && !isCurrent;

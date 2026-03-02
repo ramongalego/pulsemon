@@ -5,6 +5,7 @@ import { alertChannels } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { createAlertChannelSchema } from '@/lib/validations/alert-channel';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
+import { checkPlanLimit } from '@/lib/plan-enforcement';
 import type { AlertChannelType } from '@/types';
 
 export async function GET() {
@@ -76,19 +77,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existing = await db
-      .select({ id: alertChannels.id, type: alertChannels.type })
-      .from(alertChannels)
-      .where(eq(alertChannels.userId, session.user.id));
-
     // Check total channel count
-    if (existing.length >= limits.alertChannels) {
+    const { allowed, limit } = await checkPlanLimit(
+      session.user.id,
+      'alertChannels',
+    );
+    if (!allowed) {
       return NextResponse.json(
         {
           data: null,
           error: {
             code: 'PLAN_LIMIT',
-            message: `Your ${plan} plan allows ${limits.alertChannels} alert channel${limits.alertChannels === 1 ? '' : 's'}. Upgrade to add more.`,
+            message: `Your ${plan} plan allows ${limit} alert channel${limit === 1 ? '' : 's'}. Upgrade to add more.`,
           },
         },
         { status: 403 },
@@ -96,6 +96,11 @@ export async function POST(req: NextRequest) {
     }
 
     // Check non-email type diversity (free plan: email + 1 other type)
+    const existing = await db
+      .select({ id: alertChannels.id, type: alertChannels.type })
+      .from(alertChannels)
+      .where(eq(alertChannels.userId, session.user.id));
+
     if (requestedType !== 'email') {
       const existingNonEmailTypes = new Set(
         existing.filter((c) => c.type !== 'email').map((c) => c.type),

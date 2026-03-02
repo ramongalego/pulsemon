@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { ApiKeyManager } from '@/components/dashboard/api-key-manager';
 import { UpgradeButton } from '@/components/dashboard/upgrade-button';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
+import { getUserUsage } from '@/lib/plan-enforcement';
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -25,6 +26,7 @@ export default async function SettingsPage() {
 
   const plan = await getUserPlan(userId);
   const limits = getPlanLimits(plan);
+  const usage = await getUserUsage(userId);
   const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
 
   const keys = await db
@@ -77,12 +79,31 @@ export default async function SettingsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground mb-4 text-sm">
-            You&apos;re on the {planLabel} plan with{' '}
-            {limits.monitors === Infinity ? 'unlimited' : limits.monitors}{' '}
-            monitors, {limits.checkInterval}s check intervals, and{' '}
-            {limits.pingHistoryDays} days of ping history.
-          </p>
+          <div className="mb-4 space-y-2 text-sm">
+            <UsageRow
+              label="Monitors"
+              current={usage.monitors}
+              limit={limits.monitors}
+            />
+            <UsageRow
+              label="Alert channels"
+              current={usage.alertChannels}
+              limit={limits.alertChannels}
+            />
+            <UsageRow
+              label="Status pages"
+              current={usage.statusPages}
+              limit={limits.statusPages}
+            />
+            <div className="text-muted-foreground flex justify-between">
+              <span>Ping history</span>
+              <span>{limits.pingHistoryDays} days</span>
+            </div>
+            <div className="text-muted-foreground flex justify-between">
+              <span>Check interval</span>
+              <span>{limits.checkInterval}s minimum</span>
+            </div>
+          </div>
           {plan !== 'pro' && plan !== 'lifetime' && (
             <UpgradeButton currentPlan={plan} variant="outline" size="default">
               Upgrade Plan
@@ -108,6 +129,29 @@ export default async function SettingsPage() {
           <Button variant="destructive">Delete Account</Button>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function UsageRow({
+  label,
+  current,
+  limit,
+}: {
+  label: string;
+  current: number;
+  limit: number;
+}) {
+  const isOver = current > limit;
+  const displayLimit = limit === Infinity ? '∞' : String(limit);
+
+  return (
+    <div className="flex justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={isOver ? 'font-medium text-amber-600' : 'text-muted-foreground'}>
+        {current} / {displayLimit}
+        {isOver && ' (over limit)'}
+      </span>
     </div>
   );
 }

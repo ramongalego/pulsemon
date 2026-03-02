@@ -4,7 +4,8 @@ import { db } from '@/lib/db';
 import { statusPages, statusPageMonitors } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { createStatusPageSchema } from '@/lib/validations/status-page';
-import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
+import { getUserPlan } from '@/lib/plan-limits';
+import { checkPlanLimit } from '@/lib/plan-enforcement';
 
 export async function GET() {
   const session = await auth();
@@ -76,20 +77,18 @@ export async function POST(req: NextRequest) {
 
     // Check plan limits
     const plan = await getUserPlan(session.user.id);
-    const limits = getPlanLimits(plan);
 
-    const existing = await db
-      .select({ id: statusPages.id })
-      .from(statusPages)
-      .where(eq(statusPages.userId, session.user.id));
-
-    if (existing.length >= limits.statusPages) {
+    const { allowed, limit } = await checkPlanLimit(
+      session.user.id,
+      'statusPages',
+    );
+    if (!allowed) {
       return NextResponse.json(
         {
           data: null,
           error: {
             code: 'PLAN_LIMIT',
-            message: `Your ${plan} plan allows ${limits.statusPages} status page${limits.statusPages === 1 ? '' : 's'}. Upgrade to add more.`,
+            message: `Your ${plan} plan allows ${limit} status page${limit === 1 ? '' : 's'}. Upgrade to add more.`,
           },
         },
         { status: 403 },

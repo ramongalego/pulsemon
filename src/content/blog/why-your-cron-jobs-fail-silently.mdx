@@ -1,10 +1,10 @@
 ---
-title: "Why Your Cron Jobs Fail Silently (And How to Fix It)"
+title: 'Why Your Cron Jobs Fail Silently (And How to Fix It)'
 description: "Cron jobs fail without anyone noticing more often than you think. Here's why it happens and a simple pattern to catch it every time."
-date: "2026-03-02"
-slug: "why-your-cron-jobs-fail-silently"
-author: "Ray"
-tag: "Monitoring"
+date: '2026-03-02'
+slug: 'why-your-cron-jobs-fail-silently'
+author: 'Ray'
+tag: 'Monitoring'
 ---
 
 Your database backup runs every night at 2 AM. Your invoice generator fires every Monday morning. Your cache warmer runs every five minutes. They all work great until they don't.
@@ -85,7 +85,7 @@ For Node.js:
 async function main() {
   // ... your job logic here ...
   await processQueue();
-  await fetch("https://pulsemon.dev/api/ping/queue-processor");
+  await fetch('https://pulsemon.dev/api/ping/queue-processor');
 }
 
 main().catch((err) => {

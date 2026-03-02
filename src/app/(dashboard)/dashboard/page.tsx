@@ -25,7 +25,9 @@ import {
   Plus,
 } from 'lucide-react';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
+import { getUserUsage, isOverLimit } from '@/lib/plan-enforcement';
 import { PlanLimitButton } from '@/components/dashboard/plan-limit-button';
+import { OverLimitBanner } from '@/components/dashboard/over-limit-banner';
 
 export default async function DashboardPage({
   searchParams,
@@ -92,6 +94,8 @@ export default async function DashboardPage({
 
   const plan = await getUserPlan(userId);
   const limits = getPlanLimits(plan);
+  const usage = await getUserUsage(userId);
+  const showOverLimitBanner = isOverLimit(usage, limits);
   const atMonitorLimit =
     limits.monitors !== Infinity && stats.total >= limits.monitors;
 
@@ -100,6 +104,9 @@ export default async function DashboardPage({
   return (
     <div className="space-y-6">
       <AutoRefresh />
+      {showOverLimitBanner && (
+        <OverLimitBanner plan={plan} usage={usage} limits={limits} />
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Monitors</h1>

@@ -5,6 +5,7 @@ import { monitors } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { createMonitorSchema } from '@/lib/validations/monitor';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
+import { checkPlanLimit } from '@/lib/plan-enforcement';
 import { defaultGracePeriod } from '@/lib/monitoring/constants';
 
 export async function GET() {
@@ -65,18 +66,17 @@ export async function POST(req: NextRequest) {
     const plan = await getUserPlan(session.user.id);
     const limits = getPlanLimits(plan);
 
-    const existingMonitors = await db
-      .select({ id: monitors.id })
-      .from(monitors)
-      .where(eq(monitors.userId, session.user.id));
-
-    if (existingMonitors.length >= limits.monitors) {
+    const { allowed, limit } = await checkPlanLimit(
+      session.user.id,
+      'monitors',
+    );
+    if (!allowed) {
       return NextResponse.json(
         {
           data: null,
           error: {
             code: 'PLAN_LIMIT',
-            message: `Your ${plan} plan allows ${limits.monitors} monitor${limits.monitors === 1 ? '' : 's'}. Upgrade to add more.`,
+            message: `Your ${plan} plan allows ${limit} monitor${limit === 1 ? '' : 's'}. Upgrade to add more.`,
           },
         },
         { status: 403 },
