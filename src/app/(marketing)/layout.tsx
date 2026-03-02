@@ -24,6 +24,12 @@ export default function MarketingLayout({
               Docs
             </Link>
             <Link
+              href="/blog"
+              className="text-muted-foreground hover:text-foreground text-sm"
+            >
+              Blog
+            </Link>
+            <Link
               href="/pricing"
               className="text-muted-foreground hover:text-foreground text-sm"
             >
@@ -89,6 +95,11 @@ export default function MarketingLayout({
                 <li>
                   <Link href="/docs" className="hover:text-foreground">
                     Quick Start
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/blog" className="hover:text-foreground">
+                    Blog
                   </Link>
                 </li>
               </ul>

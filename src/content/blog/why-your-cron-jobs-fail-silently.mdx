@@ -1,0 +1,111 @@
+---
+title: "Why Your Cron Jobs Fail Silently (And How to Fix It)"
+description: "Cron jobs fail without anyone noticing more often than you think. Here's why it happens and a simple pattern to catch it every time."
+date: "2026-03-02"
+slug: "why-your-cron-jobs-fail-silently"
+author: "Ray"
+tag: "Monitoring"
+---
+
+Your database backup runs every night at 2 AM. Your invoice generator fires every Monday morning. Your cache warmer runs every five minutes. They all work great until they don't.
+
+The problem with cron jobs is that they fail the same way they run: silently. Nobody is watching stdout at 2 AM. There's no browser to show an error page. When a cron job stops working, the only signal is the absence of something happening.
+
+You find out on a Friday afternoon that backups haven't run since Tuesday. Or a customer emails you because their weekly report never arrived. Or your disk fills up because the cleanup job died three weeks ago.
+
+## Why cron jobs fail
+
+The cron daemon itself is reliable. It has been running scheduled tasks on Unix systems since 1979. The daemon is not the problem. Everything around it is.
+
+**Server reboots.** After a reboot, cron usually starts back up. But if your job depends on a mounted volume, a running database, or a network connection that takes 30 seconds to initialize, the first run after reboot fails. Silently.
+
+**Disk full.** Your job tries to write a temp file or a log entry. It can't. It crashes. Cron doesn't care.
+
+**Dependency failures.** The API you're calling is down. The database connection times out. The S3 bucket policy changed. Your job throws an exception on line 12 and exits with code 1. Nobody notices.
+
+**Timezone issues.** You deployed to a server in UTC but wrote your cron expression assuming US Eastern. The job runs at the wrong time, or during a DST transition, it runs twice. Or zero times.
+
+**The job itself crashes before logging.** This is the worst one. If your error handling depends on the job running long enough to reach the catch block, an early segfault or OOM kill means zero evidence that anything went wrong.
+
+## Why traditional monitoring misses this
+
+Most monitoring tools watch for things that are happening: high CPU, slow responses, error rate spikes. They're good at detecting active failures.
+
+Cron job failures are passive. They're the absence of something happening. Your APM won't alert you that a script didn't run. Your error tracker can't capture an exception from a process that never started.
+
+## The dead man's switch pattern
+
+The fix is to flip the model. Instead of watching for failure, watch for the absence of success.
+
+This is called a dead man's switch, or heartbeat monitoring. The idea is simple:
+
+1. Create a monitor with an expected interval (say, "every 24 hours")
+2. Add a ping to the end of your job
+3. If the ping doesn't arrive on time, you get alerted
+
+The key insight: you're not monitoring whether the job failed. You're monitoring whether it succeeded. If you don't hear from it, something went wrong. You don't need to know what.
+
+## Setting it up
+
+Add a single HTTP request to the end of your script. If the script completes successfully, the ping fires. If it crashes, hangs, or never starts, the ping never arrives and you get an alert.
+
+```bash
+#!/bin/bash
+# backup-database.sh
+
+set -e  # Exit on any error
+
+pg_dump "$DATABASE_URL" | gzip > /tmp/backup.sql.gz
+aws s3 cp /tmp/backup.sql.gz s3://my-backups/$(date +%Y-%m-%d).sql.gz
+rm /tmp/backup.sql.gz
+
+# Report success
+curl -fsS --retry 3 https://pulsemon.dev/api/ping/nightly-backup
+```
+
+The `set -e` flag means the script exits on any error. The `curl` at the end only runs if everything above it succeeded. If `pg_dump` fails, if S3 upload fails, if the disk is full, the ping never fires.
+
+For Python:
+
+```python
+import requests
+
+def main():
+    # ... your job logic here ...
+    run_etl_pipeline()
+    requests.get("https://pulsemon.dev/api/ping/nightly-etl", timeout=10)
+
+if __name__ == "__main__":
+    main()
+```
+
+For Node.js:
+
+```javascript
+async function main() {
+  // ... your job logic here ...
+  await processQueue();
+  await fetch("https://pulsemon.dev/api/ping/queue-processor");
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
+```
+
+## What you should monitor
+
+Any scheduled process that runs unattended:
+
+- **Database backups** are the most common silent failure.
+- **Email queues** stop processing and nobody complains for days because they assume it's normal.
+- **Data syncs** between services. Your analytics dashboard shows stale numbers but looks fine at a glance.
+- **Certificate renewals** from Let's Encrypt. The cert expires and your site shows a scary browser warning.
+- **Cleanup jobs** that free disk space. When they stop, other services start crashing.
+
+## Getting started
+
+This is exactly the problem we built [PulseMon](https://pulsemon.dev/login) to solve. Create a monitor, set the expected interval, add one line to your script. If it stops checking in, you get alerted via email, Slack, Discord, or webhooks.
+
+The free plan includes 30 monitors with 60-second checks. No credit card required. [Start monitoring free at pulsemon.dev](https://pulsemon.dev/login).
