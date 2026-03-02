@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { getAllPosts } from '@/lib/blog';
 
 export const metadata: Metadata = {
-  title: 'Blog - PulseMon',
+  title: 'Blog',
   description:
     'Tips, guides, and insights on cron job monitoring, infrastructure reliability, and developer operations.',
 };

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { DocsContent } from '@/components/shared/docs-content';
 
 export const metadata: Metadata = {
-  title: 'Documentation - PulseMon',
+  title: 'Documentation',
   description:
     'Quick-start guide and API reference for PulseMon cron job monitoring.',
 };

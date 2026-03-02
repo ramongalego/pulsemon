@@ -17,7 +17,7 @@ import {
 import { Check } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'Pricing - PulseMon',
+  title: 'Pricing',
   description:
     'Simple, transparent pricing for cron job monitoring. Start free with 30 monitors.',
 };

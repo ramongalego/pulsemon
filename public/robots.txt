@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /api
+Disallow: /login
+
+Sitemap: https://pulsemon.dev/sitemap.xml

@@ -10,9 +10,12 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? 'https://pulsemon.dev',
+  ),
   title: {
-    default: 'PulseMon - Cron Job Monitoring for Developers',
-    template: '%s | PulseMon',
+    default: 'PulseMon ⋅ Cron Job Monitoring for Developers',
+    template: '%s ⋅ PulseMon',
   },
   description:
     'Know the second your cron jobs stop running. Simple heartbeat monitoring with instant alerts via Slack, Discord, email, and webhooks. Free for up to 30 monitors.',
@@ -20,22 +23,24 @@ export const metadata: Metadata = {
     'cron job monitoring',
     'heartbeat monitoring',
     'cron monitoring service',
+    'monitor cron jobs',
     'scheduled task monitoring',
     "dead man's switch",
     'uptime monitoring',
+    'background job monitoring',
   ],
   authors: [{ name: 'PulseMon' }],
   openGraph: {
     type: 'website',
     locale: 'en_US',
     siteName: 'PulseMon',
-    title: 'PulseMon - Cron Job Monitoring for Developers',
+    title: 'PulseMon ⋅ Cron Job Monitoring for Developers',
     description:
       'Know the second your cron jobs stop running. Simple heartbeat monitoring with instant alerts.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PulseMon - Cron Job Monitoring for Developers',
+    title: 'PulseMon ⋅ Cron Job Monitoring for Developers',
     description:
       'Know the second your cron jobs stop running. Simple heartbeat monitoring with instant alerts.',
   },

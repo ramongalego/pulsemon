@@ -23,11 +23,11 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${page.title} - Status`,
+    title: `${page.title} ⋅ Status`,
     description: page.description ?? `Current status for ${page.title}`,
     robots: { index: true, follow: true },
     openGraph: {
-      title: `${page.title} - Status`,
+      title: `${page.title} ⋅ Status`,
       description: page.description ?? `Current status for ${page.title}`,
       type: 'website',
     },

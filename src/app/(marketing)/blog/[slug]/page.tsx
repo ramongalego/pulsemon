@@ -22,7 +22,7 @@ export async function generateMetadata({
   if (!post) return {};
 
   return {
-    title: `${post.title} - PulseMon`,
+    title: post.title,
     description: post.description,
     openGraph: {
       title: post.title,
@@ -44,6 +44,27 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-16 md:py-24">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'BlogPosting',
+            headline: post.title,
+            description: post.description,
+            datePublished: post.date,
+            author: {
+              '@type': 'Person',
+              name: post.author,
+            },
+            publisher: {
+              '@type': 'Organization',
+              name: 'PulseMon',
+              url: 'https://pulsemon.dev',
+            },
+          }),
+        }}
+      />
       <article className="mx-auto max-w-3xl">
         <Link
           href="/blog"

@@ -38,13 +38,86 @@ export default function LandingPage() {
             name: 'PulseMon',
             applicationCategory: 'DeveloperApplication',
             operatingSystem: 'Web',
+            url: 'https://pulsemon.dev',
             description:
               'Cron job and heartbeat monitoring for developers. Get instant alerts when your scheduled tasks stop running.',
-            offers: {
-              '@type': 'Offer',
-              price: '0',
-              priceCurrency: 'USD',
-            },
+            offers: [
+              {
+                '@type': 'Offer',
+                name: 'Free',
+                price: '0',
+                priceCurrency: 'USD',
+              },
+              {
+                '@type': 'Offer',
+                name: 'Starter',
+                price: '9',
+                priceCurrency: 'USD',
+                billingIncrement: 'P1M',
+              },
+              {
+                '@type': 'Offer',
+                name: 'Pro',
+                price: '19',
+                priceCurrency: 'USD',
+                billingIncrement: 'P1M',
+              },
+            ],
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: 'PulseMon',
+            url: 'https://pulsemon.dev',
+            logo: 'https://pulsemon.dev/icon.svg',
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: [
+              {
+                '@type': 'Question',
+                name: 'What happens if YOUR service goes down?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: "PulseMon runs on Vercel's global edge network with Upstash Redis for the ping endpoint. These are highly available infrastructure providers with 99.99% uptime SLAs. We also monitor our own service with independent external monitors. If our checking service goes down, it fails safe: you won't get false alerts, and we'll process any queued checks as soon as we're back.",
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'How fast are alerts?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'We check your monitors every 60 seconds (30s on Starter, 10s on Pro). Once a missed ping is detected, alerts are dispatched within seconds. From miss to inbox: under 2 minutes on the free plan.',
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'Can I monitor jobs behind a firewall?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: "Yes. PulseMon uses a dead man's switch model: your job pings us, not the other way around. As long as your server can make outbound HTTPS requests, it works. No firewall rules to configure, no agents to install.",
+                },
+              },
+              {
+                '@type': 'Question',
+                name: "What is a heartbeat / dead man's switch monitor?",
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: "A heartbeat monitor expects regular 'I'm alive' signals (pings) from your service. If a ping doesn't arrive within the expected interval plus a grace period, the monitor fires an alert. It's the simplest way to know that a scheduled job is still running on time.",
+                },
+              },
+            ],
           }),
         }}
       />
