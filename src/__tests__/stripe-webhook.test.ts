@@ -59,6 +59,7 @@ function makeRequest(body: string, signature: string | null) {
 describe('Stripe Webhook Handler', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_test_secret');
   });
 
   it('returns 400 when stripe-signature header is missing', async () => {

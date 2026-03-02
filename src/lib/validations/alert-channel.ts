@@ -1,13 +1,41 @@
 import { z } from 'zod';
 
+const safeWebhookUrl = z
+  .string()
+  .url()
+  .refine(
+    (url) => {
+      try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'https:') return false;
+        const h = parsed.hostname;
+        if (
+          h === 'localhost' ||
+          h === '[::1]' ||
+          h === '0.0.0.0' ||
+          h === '169.254.169.254' ||
+          h.startsWith('127.') ||
+          h.startsWith('10.') ||
+          h.startsWith('192.168.') ||
+          /^172\.(1[6-9]|2\d|3[01])\./.test(h)
+        )
+          return false;
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: 'Webhook URL must be HTTPS and not target private networks' },
+  );
+
 const emailConfigSchema = z.object({ email: z.string().email() });
 const slackConfigSchema = z.object({
-  webhookUrl: z.string().url(),
+  webhookUrl: safeWebhookUrl,
   channel: z.string().optional(),
 });
-const discordConfigSchema = z.object({ webhookUrl: z.string().url() });
+const discordConfigSchema = z.object({ webhookUrl: safeWebhookUrl });
 const webhookConfigSchema = z.object({
-  url: z.string().url(),
+  url: safeWebhookUrl,
   secret: z.string().optional(),
 });
 

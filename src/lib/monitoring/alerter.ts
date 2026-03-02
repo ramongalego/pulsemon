@@ -153,6 +153,7 @@ async function sendSlackWebhook(webhookUrl: string, payload: AlertEvent) {
         },
       ],
     }),
+    signal: AbortSignal.timeout(10000),
   });
 }
 
@@ -177,6 +178,7 @@ async function sendDiscordWebhook(webhookUrl: string, payload: AlertEvent) {
         },
       ],
     }),
+    signal: AbortSignal.timeout(10000),
   });
 }
 
@@ -210,5 +212,10 @@ async function sendCustomWebhook(
     headers['X-PulseMon-Signature'] = `sha256=${hex}`;
   }
 
-  await fetch(url, { method: 'POST', headers, body });
+  await fetch(url, {
+    method: 'POST',
+    headers,
+    body,
+    signal: AbortSignal.timeout(10000),
+  });
 }

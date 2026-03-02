@@ -2,7 +2,7 @@ import { db } from '@/lib/db';
 import { monitors, alertChannels, statusPages } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
-import type { Plan, PlanLimits } from '@/types';
+import type { PlanLimits } from '@/types';
 
 export interface ResourceUsage {
   monitors: number;
@@ -75,10 +75,7 @@ async function getResourceCount(
   return rows.length;
 }
 
-export function isOverLimit(
-  usage: ResourceUsage,
-  limits: PlanLimits,
-): boolean {
+export function isOverLimit(usage: ResourceUsage, limits: PlanLimits): boolean {
   return (
     usage.monitors > limits.monitors ||
     usage.alertChannels > limits.alertChannels ||

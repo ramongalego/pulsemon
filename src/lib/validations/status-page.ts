@@ -4,8 +4,8 @@ export const createStatusPageSchema = z.object({
   title: z.string().min(1).max(100),
   slug: z
     .string()
-    .min(1)
-    .max(100)
+    .min(3)
+    .max(60)
     .regex(/^[a-z0-9-]+$/),
   description: z.string().max(500).optional(),
 });
@@ -15,8 +15,8 @@ export const updateStatusPageSchema = z
     title: z.string().min(1).max(100).optional(),
     slug: z
       .string()
-      .min(1)
-      .max(100)
+      .min(3)
+      .max(60)
       .regex(/^[a-z0-9-]+$/)
       .optional(),
     description: z.string().max(500).nullable().optional(),

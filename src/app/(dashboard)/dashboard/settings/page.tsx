@@ -148,7 +148,11 @@ function UsageRow({
   return (
     <div className="flex justify-between">
       <span className="text-muted-foreground">{label}</span>
-      <span className={isOver ? 'font-medium text-amber-600' : 'text-muted-foreground'}>
+      <span
+        className={
+          isOver ? 'font-medium text-amber-600' : 'text-muted-foreground'
+        }
+      >
         {current} / {displayLimit}
         {isOver && ' (over limit)'}
       </span>
