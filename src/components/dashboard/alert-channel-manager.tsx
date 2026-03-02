@@ -31,6 +31,7 @@ import { Badge } from '@/components/ui/badge';
 import { Bell, Mail, MessageSquare, Plus, Trash2, Webhook } from 'lucide-react';
 import { toast } from 'sonner';
 import type { AlertChannel } from '@/lib/db/schema';
+import type { Plan } from '@/types';
 import { PlanLimitDialog } from '@/components/dashboard/plan-limit-dialog';
 import { UpgradeModal } from '@/components/dashboard/upgrade-modal';
 
@@ -85,7 +86,7 @@ export function AlertChannelManager({
 }: {
   initialChannels: AlertChannel[];
   channelLimit: number;
-  currentPlan?: 'free' | 'starter' | 'pro';
+  currentPlan?: Plan;
 }) {
   const [channels, setChannels] = useState(initialChannels);
   const [dialogOpen, setDialogOpen] = useState(false);

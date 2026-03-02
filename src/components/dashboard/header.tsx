@@ -16,7 +16,7 @@ export async function DashboardHeader() {
         <MobileNav />
       </div>
       <div className="flex items-center gap-3">
-        {plan !== 'pro' && (
+        {plan !== 'pro' && plan !== 'lifetime' && (
           <UpgradeButton currentPlan={plan} variant="default" size="sm">
             Upgrade
           </UpgradeButton>

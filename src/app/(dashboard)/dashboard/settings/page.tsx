@@ -68,7 +68,10 @@ export default async function SettingsPage() {
               <CardTitle>Plan</CardTitle>
               <CardDescription>Your current subscription</CardDescription>
             </div>
-            <Badge variant="secondary" className="text-sm">
+            <Badge
+              variant="secondary"
+              className={`text-sm ${plan === 'lifetime' ? 'border-amber-500/30 bg-amber-500/10 text-amber-600' : ''}`}
+            >
               {planLabel}
             </Badge>
           </div>
@@ -80,7 +83,7 @@ export default async function SettingsPage() {
             monitors, {limits.checkInterval}s check intervals, and{' '}
             {limits.pingHistoryDays} days of ping history.
           </p>
-          {plan === 'free' && (
+          {plan !== 'pro' && plan !== 'lifetime' && (
             <UpgradeButton currentPlan={plan} variant="outline" size="default">
               Upgrade Plan
             </UpgradeButton>

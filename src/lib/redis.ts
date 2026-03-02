@@ -10,4 +10,5 @@ export const redisKeys = {
   lastPing: (monitorId: string) => `ping:${monitorId}:last`,
   slugToMonitor: (slug: string) => `slug:${slug}`,
   pingRateLimit: (slug: string) => `rl:${slug}`,
+  lifetimeCount: 'lifetime:count',
 } as const;

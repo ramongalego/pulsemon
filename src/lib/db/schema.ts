@@ -12,7 +12,7 @@ import {
 } from 'drizzle-orm/pg-core';
 
 // Enums
-export const planEnum = pgEnum('plan', ['free', 'starter', 'pro']);
+export const planEnum = pgEnum('plan', ['free', 'starter', 'pro', 'lifetime']);
 export const monitorStatusEnum = pgEnum('monitor_status', [
   'up',
   'down',

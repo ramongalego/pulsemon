@@ -18,16 +18,16 @@ export default function MarketingLayout({
           </Link>
           <div className="hidden items-center gap-6 md:flex">
             <Link
-              href="/pricing"
-              className="text-muted-foreground hover:text-foreground text-sm"
-            >
-              Pricing
-            </Link>
-            <Link
               href="/docs"
               className="text-muted-foreground hover:text-foreground text-sm"
             >
               Docs
+            </Link>
+            <Link
+              href="/pricing"
+              className="text-muted-foreground hover:text-foreground text-sm"
+            >
+              Pricing
             </Link>
           </div>
           <div className="flex items-center gap-3">

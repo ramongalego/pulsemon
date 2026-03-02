@@ -21,7 +21,6 @@ import {
   Globe,
   LayoutDashboard,
   Shield,
-  Users,
   Zap,
   Check,
 } from 'lucide-react';
@@ -201,11 +200,6 @@ export default function LandingPage() {
                 desc: 'Full REST API. Manage everything programmatically.',
               },
               {
-                icon: Users,
-                title: 'Team support',
-                desc: 'Share monitors and alerts with your team on paid plans.',
-              },
-              {
                 icon: Shield,
                 title: 'Incident timeline',
                 desc: 'Full history of every downtime event and resolution.',
@@ -326,7 +320,7 @@ export default function LandingPage() {
           </h2>
           <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-center">
             Start free. Upgrade when you need faster checks, more monitors, or
-            team access.
+            longer history.
           </p>
 
           <div className="mt-12 grid gap-8 md:grid-cols-3">
@@ -383,7 +377,6 @@ export default function LandingPage() {
                   '100 monitors',
                   '30-second checks',
                   '30 days ping history',
-                  '3 team members',
                   'All integrations',
                   'Email support',
                 ].map((item) => (
@@ -415,7 +408,6 @@ export default function LandingPage() {
                   'Unlimited monitors',
                   '10-second checks',
                   '90 days ping history',
-                  '10 team members',
                   'All integrations + webhooks',
                   'Priority email support',
                 ].map((item) => (
@@ -475,14 +467,6 @@ export default function LandingPage() {
                 your job pings us, not the other way around. As long as your
                 server can make outbound HTTPS requests, it works. No firewall
                 rules to configure, no agents to install.
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="teams">
-              <AccordionTrigger>Do you support team accounts?</AccordionTrigger>
-              <AccordionContent>
-                Team support is available on the Starter plan (3 members) and
-                Pro plan (10 members). All team members share the same monitors
-                and alert channels.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="heartbeat">

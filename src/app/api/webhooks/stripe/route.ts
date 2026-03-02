@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import type { Plan } from '@/types';
+import { invalidateLifetimeCount } from '@/lib/lifetime-count';
 
 export async function POST(req: NextRequest) {
   const body = await req.text();
@@ -40,19 +41,23 @@ async function handleStripeEvent(event: Stripe.Event) {
     case 'checkout.session.completed': {
       const session = event.data.object as {
         customer: string;
-        subscription: string;
+        subscription: string | null;
         metadata?: { userId?: string; plan?: string };
       };
       if (session.metadata?.userId) {
+        const isLifetime = session.metadata.plan === 'lifetime';
         await db
           .update(users)
           .set({
             stripeCustomerId: session.customer,
-            stripeSubscriptionId: session.subscription,
+            stripeSubscriptionId: isLifetime ? null : session.subscription,
             plan: (session.metadata.plan as Plan) ?? 'starter',
             updatedAt: new Date(),
           })
           .where(eq(users.id, session.metadata.userId));
+        if (isLifetime) {
+          await invalidateLifetimeCount();
+        }
       }
       break;
     }
@@ -63,6 +68,14 @@ async function handleStripeEvent(event: Stripe.Event) {
         status: string;
         items: { data: Array<{ price: { lookup_key?: string } }> };
       };
+      // Lifetime users have no subscription - skip if matched by accident
+      const [updatedUser] = await db
+        .select({ plan: users.plan })
+        .from(users)
+        .where(eq(users.stripeSubscriptionId, subscription.id))
+        .limit(1);
+      if (updatedUser?.plan === 'lifetime') break;
+
       const plan = mapPriceToplan(
         subscription.items.data[0]?.price?.lookup_key,
       );
@@ -77,6 +90,14 @@ async function handleStripeEvent(event: Stripe.Event) {
 
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as { id: string };
+      // Never downgrade lifetime users
+      const [deletedUser] = await db
+        .select({ plan: users.plan })
+        .from(users)
+        .where(eq(users.stripeSubscriptionId, subscription.id))
+        .limit(1);
+      if (deletedUser?.plan === 'lifetime') break;
+
       await db
         .update(users)
         .set({

@@ -57,6 +57,17 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     statusPages: 5,
     monitorsPerStatusPage: Infinity,
   },
+  lifetime: {
+    monitors: 200,
+    checkInterval: 10,
+    teamMembers: 1,
+    alertChannels: Infinity,
+    pingHistoryDays: 90,
+    allowedChannelTypes: ['email', 'slack', 'discord', 'webhook'],
+    maxNonEmailTypes: Infinity,
+    statusPages: 3,
+    monitorsPerStatusPage: Infinity,
+  },
 };
 
 // Alert escalation intervals (in seconds)

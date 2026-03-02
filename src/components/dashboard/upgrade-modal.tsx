@@ -32,7 +32,6 @@ const PLANS = [
       '100 monitors',
       '30s check intervals',
       '30 days ping history',
-      '3 team members',
       '5 alert channels',
       'All integrations',
     ],
@@ -46,12 +45,23 @@ const PLANS = [
       'Unlimited monitors',
       '10s check intervals',
       '90 days ping history',
-      '10 team members',
       'Unlimited alert channels',
       'Webhooks + all integrations',
     ],
   },
 ] as const;
+
+const LIFETIME_LIMIT = 100;
+
+const LIFETIME_FEATURES = [
+  '200 monitors',
+  '10s check intervals',
+  '90 days ping history',
+  'Unlimited alert channels',
+  'All integrations',
+  '3 status pages',
+  'No monthly fees, ever',
+];
 
 function formatPrice(plan: (typeof PLANS)[number], billing: Billing): string {
   if (plan.monthly === 0) return '$0';
@@ -65,6 +75,7 @@ function savingsPercent(plan: (typeof PLANS)[number]): number {
 }
 
 function getRecommendedPlan(currentPlan: Plan): Plan {
+  if (currentPlan === 'lifetime') return 'lifetime';
   if (currentPlan === 'free') return 'starter';
   if (currentPlan === 'starter') return 'pro';
   return 'pro';
@@ -83,7 +94,10 @@ export function UpgradeModal({
   currentPlan,
   message,
 }: UpgradeModalProps) {
-  const [billing, setBilling] = useState<Billing>('monthly');
+  const [billing, setBilling] = useState<'monthly' | 'yearly' | 'lifetime'>(
+    currentPlan === 'lifetime' ? 'lifetime' : 'monthly',
+  );
+  const [lifetimeCount, setLifetimeCount] = useState(0);
 
   useEffect(() => {
     if (!open) return;
@@ -93,6 +107,14 @@ export function UpgradeModal({
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [open, onOpenChange]);
+
+  useEffect(() => {
+    if (!open) return;
+    fetch('/api/lifetime-count')
+      .then((res) => res.json())
+      .then((json) => setLifetimeCount(json.data?.count ?? 0))
+      .catch(() => setLifetimeCount(0));
+  }, [open]);
 
   if (!open) return null;
 
@@ -125,7 +147,7 @@ export function UpgradeModal({
             {message || 'Get more monitors, faster checks, and longer history'}
           </p>
 
-          {/* Billing toggle */}
+          {/* Billing toggle: Monthly / Yearly / Lifetime */}
           <div className="mt-4 inline-flex items-center rounded-full border p-1">
             <button
               onClick={() => setBilling('monthly')}
@@ -156,97 +178,162 @@ export function UpgradeModal({
                 Save up to 22%
               </span>
             </button>
+            <button
+              onClick={() => setBilling('lifetime')}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                billing === 'lifetime'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Lifetime
+            </button>
           </div>
         </div>
 
-        {/* Plan cards grid */}
-        <div className="grid gap-4 p-6 md:grid-cols-3">
-          {PLANS.map((plan) => {
-            const isCurrent = plan.key === currentPlan;
-            const isRecommended = plan.key === recommended && !isCurrent;
-            const isUpgrade =
-              !isCurrent &&
-              PLANS.findIndex((p) => p.key === plan.key) >
-                PLANS.findIndex((p) => p.key === currentPlan);
+        {billing !== 'lifetime' ? (
+          <div className="grid min-h-[420px] gap-4 p-6 md:grid-cols-3 md:h-[420px]">
+            {PLANS.map((plan) => {
+              const isCurrent = plan.key === currentPlan;
+              const isRecommended = plan.key === recommended && !isCurrent;
+              const isUpgrade =
+                !isCurrent &&
+                PLANS.findIndex((p) => p.key === plan.key) >
+                  PLANS.findIndex((p) => p.key === currentPlan);
 
-            return (
-              <div
-                key={plan.key}
-                className={`relative flex flex-col rounded-lg border p-5 ${
-                  isRecommended
-                    ? 'border-primary ring-primary/20 ring-2'
-                    : isCurrent
-                      ? 'bg-muted/50'
-                      : ''
-                }`}
-              >
-                {/* Badge */}
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-sm font-semibold">{plan.name}</span>
-                  {isCurrent && (
-                    <Badge variant="secondary" className="text-xs">
-                      Current plan
-                    </Badge>
-                  )}
-                  {isRecommended && (
-                    <Badge className="text-xs">Recommended</Badge>
-                  )}
-                </div>
-
-                {/* Price */}
-                <div className="mb-4 flex items-center justify-between">
-                  <div className="flex items-baseline gap-0.5">
-                    <span className="text-3xl font-bold">
-                      {formatPrice(plan, billing)}
-                    </span>
-                    <span className="text-muted-foreground text-sm">/mo</span>
+              return (
+                <div
+                  key={plan.key}
+                  className={`relative flex flex-col rounded-lg border p-5 ${
+                    isRecommended
+                      ? 'border-primary ring-primary/20 ring-2'
+                      : isCurrent
+                        ? 'bg-muted/50'
+                        : ''
+                  }`}
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-sm font-semibold">{plan.name}</span>
+                    {isCurrent && (
+                      <Badge variant="secondary" className="text-xs">
+                        Current plan
+                      </Badge>
+                    )}
+                    {isRecommended && (
+                      <Badge className="text-xs">Recommended</Badge>
+                    )}
                   </div>
-                  {billing === 'yearly' && plan.yearly > 0 && (
-                    <div className="text-right text-xs text-green-600">
-                      <p>${plan.yearly}/yr</p>
-                      <p>Save {savingsPercent(plan)}%</p>
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex items-baseline gap-0.5">
+                      <span className="text-3xl font-bold">
+                        {formatPrice(plan, billing)}
+                      </span>
+                      <span className="text-muted-foreground text-sm">/mo</span>
                     </div>
+                    {billing === 'yearly' && plan.yearly > 0 && (
+                      <div className="text-right text-xs text-green-600">
+                        <p>${plan.yearly}/yr</p>
+                        <p>Save {savingsPercent(plan)}%</p>
+                      </div>
+                    )}
+                  </div>
+                  <ul className="mb-6 flex-1 space-y-2">
+                    {plan.features.map((feature) => (
+                      <li
+                        key={feature}
+                        className="flex items-start gap-2 text-sm"
+                      >
+                        <Check className="text-primary mt-0.5 h-4 w-4 shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {isCurrent ? (
+                    <Button variant="outline" disabled className="w-full">
+                      Current plan
+                    </Button>
+                  ) : isUpgrade ? (
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        toast.info(
+                          'Stripe checkout coming soon — upgrade not yet wired up.',
+                        );
+                      }}
+                    >
+                      Upgrade to {plan.name}
+                    </Button>
+                  ) : (
+                    <Button variant="outline" disabled className="w-full">
+                      {plan.name}
+                    </Button>
                   )}
                 </div>
-
-                {/* Features */}
-                <ul className="mb-6 flex-1 space-y-2">
-                  {plan.features.map((feature) => (
-                    <li
-                      key={feature}
-                      className="flex items-start gap-2 text-sm"
-                    >
-                      <Check className="text-primary mt-0.5 h-4 w-4 shrink-0" />
-                      <span>{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* CTA */}
-                {isCurrent ? (
+              );
+            })}
+          </div>
+        ) : (
+          <div className="flex min-h-[420px] flex-col items-center justify-center p-6 md:h-[420px]">
+            <div
+              className={`w-full max-w-md rounded-lg border p-6 ${
+                currentPlan === 'lifetime'
+                  ? 'bg-muted/50'
+                  : lifetimeCount >= LIFETIME_LIMIT
+                    ? 'opacity-60'
+                    : 'border-amber-500/30 bg-amber-500/5'
+              }`}
+            >
+              <div className="text-center">
+                <h3 className="text-lg font-semibold">
+                  Founding Member — Lifetime Plan
+                </h3>
+                <div className="mt-3 flex items-baseline justify-center gap-1">
+                  <span className="text-4xl font-bold">$349</span>
+                  <span className="text-muted-foreground text-sm">
+                    one-time
+                  </span>
+                </div>
+                <p className="text-muted-foreground mt-1 text-sm">
+                  Pay once, use forever. Limited to {LIFETIME_LIMIT} spots.
+                </p>
+              </div>
+              <ul className="mt-6 grid gap-2 sm:grid-cols-2">
+                {LIFETIME_FEATURES.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2 text-sm">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-6 flex flex-col items-center gap-3">
+                {currentPlan === 'lifetime' ? (
                   <Button variant="outline" disabled className="w-full">
                     Current plan
                   </Button>
-                ) : isUpgrade ? (
+                ) : lifetimeCount >= LIFETIME_LIMIT ? (
+                  <Button disabled className="w-full">
+                    Sold out
+                  </Button>
+                ) : (
                   <Button
-                    className="w-full"
+                    className="w-full bg-amber-600 hover:bg-amber-700"
+                    size="lg"
                     onClick={() => {
                       toast.info(
                         'Stripe checkout coming soon — upgrade not yet wired up.',
                       );
                     }}
                   >
-                    Upgrade to {plan.name}
-                  </Button>
-                ) : (
-                  <Button variant="outline" disabled className="w-full">
-                    {plan.name}
+                    Get Lifetime Access
                   </Button>
                 )}
+                <p className="text-muted-foreground text-sm">
+                  {lifetimeCount} / {LIFETIME_LIMIT} claimed
+                </p>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

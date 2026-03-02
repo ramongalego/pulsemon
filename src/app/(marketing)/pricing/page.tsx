@@ -51,7 +51,6 @@ const plans = [
       '100 monitors',
       '30-second checks',
       '30 days ping history',
-      '3 team members',
       'All integrations',
       'Email support',
     ],
@@ -68,7 +67,6 @@ const plans = [
       'Unlimited monitors',
       '10-second checks',
       '90 days ping history',
-      '10 team members',
       'All integrations + webhooks',
       'Priority email support',
     ],
@@ -100,12 +98,6 @@ const faqs = [
     answer:
       "You won't be able to create new monitors, but your existing ones will keep running and alerting as normal. Upgrade your plan to add more.",
   },
-  {
-    id: 'team-billing',
-    question: 'How does team billing work?',
-    answer:
-      'Team members are included in your plan at no extra cost. The Starter plan includes 3 members and Pro includes 10. All members share the same monitors and alerts.',
-  },
 ];
 
 export default function PricingPage() {
@@ -117,7 +109,7 @@ export default function PricingPage() {
         </h1>
         <p className="text-muted-foreground mt-4 text-lg">
           Start free. Upgrade when you need faster checks, more monitors, or
-          team access.
+          longer history.
         </p>
       </div>
 
@@ -199,7 +191,6 @@ export default function PricingPage() {
                   starter: '30 days',
                   pro: '90 days',
                 },
-                { feature: 'Team members', free: '1', starter: '3', pro: '10' },
                 {
                   feature: 'Alert channels',
                   free: '2',

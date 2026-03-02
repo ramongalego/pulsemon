@@ -15,6 +15,13 @@
       "when": 1772390425995,
       "tag": "0001_confused_blindfold",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1772401427637,
+      "tag": "0002_dapper_scream",
+      "breakpoints": true
     }
   ]
 }

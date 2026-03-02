@@ -16,7 +16,7 @@ export type MonitorStatus = 'up' | 'down' | 'paused' | 'new';
 export type PingStatus = 'success' | 'fail';
 
 // Plan type
-export type Plan = 'free' | 'starter' | 'pro';
+export type Plan = 'free' | 'starter' | 'pro' | 'lifetime';
 
 // Alert channel type
 export type AlertChannelType = 'email' | 'slack' | 'discord' | 'webhook';
