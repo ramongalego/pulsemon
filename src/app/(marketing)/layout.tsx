@@ -49,9 +49,7 @@ export default function MarketingLayout({
             </Link>
             <Link href="/login">
               <Button size="sm">
-                <span className="hidden sm:inline">
-                  Start Monitoring - Free
-                </span>
+                <span className="hidden sm:inline">Get Started Free</span>
                 <span className="sm:hidden">Sign in</span>
               </Button>
             </Link>

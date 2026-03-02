@@ -16,11 +16,12 @@ import {
 import {
   Activity,
   ArrowRight,
-  Clock,
   Code2,
   Globe,
   LayoutDashboard,
+  Lock,
   Shield,
+  Wifi,
   Zap,
   Check,
 } from 'lucide-react';
@@ -90,7 +91,7 @@ export default function LandingPage() {
                 name: 'What happens if YOUR service goes down?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: "PulseMon runs on Vercel's global edge network with Upstash Redis for the ping endpoint. These are highly available infrastructure providers with 99.99% uptime SLAs. We also monitor our own service with independent external monitors. If our checking service goes down, it fails safe: you won't get false alerts, and we'll process any queued checks as soon as we're back.",
+                  text: "PulseMon runs on Vercel's edge network and Upstash Redis, both with 99.99% uptime SLAs. We monitor ourselves with independent external checks. If our checker goes down, it fails safe. No false alerts.",
                 },
               },
               {
@@ -103,10 +104,26 @@ export default function LandingPage() {
               },
               {
                 '@type': 'Question',
+                name: 'Is there a free tier?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Yes. 30 monitors with 60-second checks, forever. No credit card required.',
+                },
+              },
+              {
+                '@type': 'Question',
                 name: 'Can I monitor jobs behind a firewall?',
                 acceptedAnswer: {
                   '@type': 'Answer',
                   text: "Yes. PulseMon uses a dead man's switch model: your job pings us, not the other way around. As long as your server can make outbound HTTPS requests, it works. No firewall rules to configure, no agents to install.",
+                },
+              },
+              {
+                '@type': 'Question',
+                name: 'What languages/frameworks do you support?',
+                acceptedAnswer: {
+                  '@type': 'Answer',
+                  text: 'Any. If it can make an HTTP request, it works. Bash, Python, Node.js, Go, Ruby, PHP, Docker — we have examples for all of them in the docs.',
                 },
               },
               {
@@ -124,54 +141,60 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="mx-auto max-w-6xl px-4 pt-16 pb-20 md:pt-24 md:pb-32">
-        <div className="mx-auto max-w-3xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight md:text-6xl">
-            Your cron jobs fail silently.
-            <br />
-            <span className="text-primary">Not anymore.</span>
-          </h1>
-          <p className="text-muted-foreground mt-6 text-lg md:text-xl">
-            PulseMon watches your cron jobs, background tasks, and scheduled
-            scripts. When they stop running, you know in under 60 seconds. Add
-            one line to your script. Done.
-          </p>
-          <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <Link href="/login">
-              <Button size="lg" className="w-full sm:w-auto">
-                Start Monitoring - Free
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-            <a href="#how-it-works">
-              <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                See how it works
-              </Button>
-            </a>
-          </div>
-        </div>
-
-        {/* Terminal mockup */}
-        <div className="mx-auto mt-12 max-w-2xl">
-          <div className="overflow-hidden rounded-xl border bg-slate-950 shadow-2xl">
-            <div className="flex items-center gap-2 border-b border-slate-800 px-4 py-3">
-              <div className="h-3 w-3 rounded-full bg-red-500" />
-              <div className="h-3 w-3 rounded-full bg-yellow-500" />
-              <div className="h-3 w-3 rounded-full bg-green-500" />
-              <span className="ml-2 text-xs text-slate-500">terminal</span>
+        <div className="grid items-center gap-12 lg:grid-cols-2">
+          <div className="text-center lg:text-left">
+            <h1 className="text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
+              Your cron jobs fail silently.
+              <br />
+              <span className="text-primary">Not anymore.</span>
+            </h1>
+            <p className="text-muted-foreground mt-6 text-lg md:text-xl">
+              Heartbeat monitoring for cron jobs, background tasks, and
+              scheduled scripts. If your job doesn&apos;t check in on time, you
+              know in under 60 seconds.
+            </p>
+            <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row lg:justify-start sm:justify-center">
+              <Link href="/login">
+                <Button size="lg" className="w-full sm:w-auto">
+                  Get Started Free
+                  <ArrowRight className="ml-[-2] h-4 w-4" />
+                </Button>
+              </Link>
+              <a href="#how-it-works">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full sm:w-auto"
+                >
+                  See how it works
+                </Button>
+              </a>
             </div>
-            <div className="p-4 font-mono text-sm">
-              <p className="text-slate-500"># Your cron job script</p>
-              <p className="text-green-400">$ ./backup-database.sh</p>
-              <p className="text-slate-400">
-                Backing up production database...
-              </p>
-              <p className="text-slate-400">Compressing dump... done.</p>
-              <p className="text-slate-400">Uploading to S3... done.</p>
-              <p className="mt-2 text-slate-500"># Tell PulseMon it ran</p>
-              <p className="text-green-400">
-                $ curl -fsS https://pulsemon.dev/api/ping/daily-backup
-              </p>
-              <p className="text-blue-400">{'{ "ok": true }'}</p>
+          </div>
+
+          {/* Terminal mockup */}
+          <div className="min-w-0">
+            <div className="overflow-hidden rounded-xl border bg-slate-950 shadow-2xl">
+              <div className="flex items-center gap-2 border-b border-slate-800 px-4 py-3">
+                <div className="h-3 w-3 rounded-full bg-red-500" />
+                <div className="h-3 w-3 rounded-full bg-yellow-500" />
+                <div className="h-3 w-3 rounded-full bg-green-500" />
+                <span className="ml-2 text-xs text-slate-500">terminal</span>
+              </div>
+              <div className="p-4 font-mono text-sm">
+                <p className="text-slate-500"># Your cron job script</p>
+                <p className="text-green-400">$ ./backup-database.sh</p>
+                <p className="text-slate-400">
+                  Backing up production database...
+                </p>
+                <p className="text-slate-400">Compressing dump... done.</p>
+                <p className="text-slate-400">Uploading to S3... done.</p>
+                <p className="mt-2 text-slate-500"># Tell PulseMon it ran</p>
+                <p className="text-green-400">
+                  $ curl -fsS https://pulsemon.dev/api/ping/daily-backup
+                </p>
+                <p className="text-blue-400">{'{ "ok": true }'}</p>
+              </div>
             </div>
           </div>
         </div>
@@ -210,7 +233,7 @@ export default function LandingPage() {
               <p className="text-muted-foreground mt-2 text-sm">
                 Append{' '}
                 <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
-                  curl https://pulsemon.dev/api/ping/your-slug
+                  curl -fsS https://pulsemon.dev/api/ping/your-slug
                 </code>{' '}
                 at the end.
               </p>
@@ -237,7 +260,7 @@ export default function LandingPage() {
             Everything you need to monitor cron jobs
           </h2>
           <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-center">
-            Built by a developer, for developers. No fluff.
+            Built by a developer, for developers.
           </p>
 
           <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -249,8 +272,8 @@ export default function LandingPage() {
               },
               {
                 icon: LayoutDashboard,
-                title: 'Beautiful dashboard',
-                desc: 'Ping history, uptime charts, and incident timelines at a glance.',
+                title: 'Ping history and uptime',
+                desc: 'See every ping, response time, and incident. Track uptime over 7, 30, or 90 days.',
               },
               {
                 icon: Activity,
@@ -258,12 +281,12 @@ export default function LandingPage() {
                 desc: '30 monitors, 60-second checks. No credit card required.',
               },
               {
-                icon: Clock,
-                title: '60-second checks',
-                desc: 'We check your monitors every minute. Faster on paid plans.',
+                icon: Globe,
+                title: 'Public status pages',
+                desc: 'Share a branded status page with your users. Shows uptime, incidents, and current status.',
               },
               {
-                icon: Globe,
+                icon: Wifi,
                 title: 'Global edge network',
                 desc: 'Ping endpoint runs on the edge. Fast from anywhere.',
               },
@@ -276,6 +299,11 @@ export default function LandingPage() {
                 icon: Shield,
                 title: 'Incident timeline',
                 desc: 'Full history of every downtime event and resolution.',
+              },
+              {
+                icon: Lock,
+                title: 'Webhook signatures',
+                desc: 'Every outbound webhook is HMAC-signed. Verify it came from PulseMon.',
               },
             ].map((feature) => (
               <Card key={feature.title} className="border-0 shadow-none">
@@ -301,7 +329,7 @@ export default function LandingPage() {
             Why PulseMon?
           </h2>
           <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-center">
-            Honest comparison. Pick what works for you.
+            See how PulseMon compares.
           </p>
 
           <div className="mt-12 overflow-x-auto">
@@ -459,7 +487,7 @@ export default function LandingPage() {
                   </div>
                 ))}
                 <Link href="/login" className="mt-4 block">
-                  <Button className="w-full">Start free trial</Button>
+                  <Button className="w-full">Get started</Button>
                 </Link>
               </CardContent>
             </Card>
@@ -469,7 +497,7 @@ export default function LandingPage() {
               <CardHeader>
                 <CardTitle>Pro</CardTitle>
                 <CardDescription>
-                  For growing SaaS and larger teams
+                  For production workloads and growing SaaS
                 </CardDescription>
                 <div className="mt-4">
                   <span className="text-4xl font-bold">$19</span>
@@ -491,7 +519,7 @@ export default function LandingPage() {
                 ))}
                 <Link href="/login" className="mt-4 block">
                   <Button variant="outline" className="w-full">
-                    Start free trial
+                    Get started
                   </Button>
                 </Link>
               </CardContent>
@@ -513,13 +541,10 @@ export default function LandingPage() {
                 What happens if YOUR service goes down?
               </AccordionTrigger>
               <AccordionContent>
-                PulseMon runs on Vercel&apos;s global edge network with Upstash
-                Redis for the ping endpoint. These are highly available
-                infrastructure providers with 99.99% uptime SLAs. We also
-                monitor our own service with independent external monitors. If
-                our checking service goes down, it fails safe: you won&apos;t
-                get false alerts, and we&apos;ll process any queued checks as
-                soon as we&apos;re back.
+                PulseMon runs on Vercel&apos;s edge network and Upstash Redis,
+                both with 99.99% uptime SLAs. We monitor ourselves with
+                independent external checks. If our checker goes down, it fails
+                safe. No false alerts.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="alert-speed">
@@ -531,6 +556,13 @@ export default function LandingPage() {
                 plan.
               </AccordionContent>
             </AccordionItem>
+            <AccordionItem value="free-tier">
+              <AccordionTrigger>Is there a free tier?</AccordionTrigger>
+              <AccordionContent>
+                Yes. 30 monitors with 60-second checks, forever. No credit card
+                required.
+              </AccordionContent>
+            </AccordionItem>
             <AccordionItem value="firewall">
               <AccordionTrigger>
                 Can I monitor jobs behind a firewall?
@@ -540,6 +572,16 @@ export default function LandingPage() {
                 your job pings us, not the other way around. As long as your
                 server can make outbound HTTPS requests, it works. No firewall
                 rules to configure, no agents to install.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="languages">
+              <AccordionTrigger>
+                What languages/frameworks do you support?
+              </AccordionTrigger>
+              <AccordionContent>
+                Any. If it can make an HTTP request, it works. Bash, Python,
+                Node.js, Go, Ruby, PHP, Docker — we have examples for all of
+                them in the docs.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="heartbeat">
@@ -565,13 +607,12 @@ export default function LandingPage() {
             Stop finding out about failed cron jobs from your users
           </h2>
           <p className="text-muted-foreground mt-4 text-lg">
-            Set up your first monitor in under 2 minutes. Free for up to 30
-            monitors.
+            Takes less than 2 minutes. No credit card required.
           </p>
           <Link href="/login" className="mt-8 inline-block">
             <Button size="lg">
-              Start Monitoring - Free
-              <ArrowRight className="ml-2 h-4 w-4" />
+              Get Started Free
+              <ArrowRight className="ml-[-2] h-4 w-4" />
             </Button>
           </Link>
         </div>

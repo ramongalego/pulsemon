@@ -1,20 +1,11 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { Check } from 'lucide-react';
+import { PricingCards } from '@/components/shared/pricing-toggle';
 
 export const metadata: Metadata = {
   title: 'Pricing',
@@ -22,60 +13,30 @@ export const metadata: Metadata = {
     'Simple, transparent pricing for cron job monitoring. Start free with 30 monitors.',
 };
 
-const plans = [
+const comparisonRows = [
+  { feature: 'Monitors', free: '30', starter: '100', pro: 'Unlimited' },
+  { feature: 'Check interval', free: '60s', starter: '30s', pro: '10s' },
   {
-    name: 'Free',
-    description: 'For side projects and personal use',
-    price: '$0',
-    highlighted: false,
-    badge: null,
-    cta: 'Get started',
-    ctaVariant: 'outline' as const,
-    features: [
-      '30 monitors',
-      '60-second checks',
-      '7 days ping history',
-      'Email + 1 integration',
-      'API access',
-    ],
+    feature: 'Ping history',
+    free: '7 days',
+    starter: '30 days',
+    pro: '90 days',
   },
+  { feature: 'Alert channels', free: '2', starter: '5', pro: 'Unlimited' },
+  { feature: 'Status pages', free: '1', starter: '2', pro: '5' },
+  { feature: 'Custom webhooks', free: 'No', starter: 'Yes', pro: 'Yes' },
+  { feature: 'API access', free: 'Yes', starter: 'Yes', pro: 'Yes' },
   {
-    name: 'Starter',
-    description: 'For indie devs and small teams',
-    price: '$9',
-    highlighted: true,
-    badge: 'Most popular',
-    cta: 'Start free trial',
-    ctaVariant: 'default' as const,
-    features: [
-      '100 monitors',
-      '30-second checks',
-      '30 days ping history',
-      'All integrations',
-      'Email support',
-    ],
-  },
-  {
-    name: 'Pro',
-    description: 'For growing SaaS and larger teams',
-    price: '$19',
-    highlighted: false,
-    badge: null,
-    cta: 'Start free trial',
-    ctaVariant: 'outline' as const,
-    features: [
-      'Unlimited monitors',
-      '10-second checks',
-      '90 days ping history',
-      'All integrations + webhooks',
-      'Priority email support',
-    ],
+    feature: 'Support',
+    free: 'Community',
+    starter: 'Email',
+    pro: 'Priority email',
   },
 ];
 
 const faqs = [
   {
-    id: 'free-trial',
+    id: 'free-plan',
     question: 'Is the free plan really free?',
     answer:
       'Yes! The free plan includes 30 monitors with 60-second checks. No credit card required, no time limit. Use it forever.',
@@ -84,13 +45,19 @@ const faqs = [
     id: 'upgrade',
     question: 'Can I upgrade or downgrade at any time?',
     answer:
-      "Absolutely. Upgrade instantly to get more monitors and faster checks. Downgrade anytime — you'll keep your current plan until the end of the billing period.",
+      "Yes. Upgrade instantly to get more monitors and faster checks. Downgrade anytime — you'll keep your current plan until the end of the billing period. Your existing monitors and alert channels keep running even if you're over the new plan's limits.",
   },
   {
     id: 'billing',
     question: 'How does billing work?',
     answer:
-      "Plans are billed monthly via Stripe. You can cancel anytime. When you cancel, you'll keep access until the end of your current billing period.",
+      "Plans are billed monthly or yearly via Stripe. Yearly plans save up to 22%. You can cancel anytime. When you cancel, you'll keep access until the end of your current billing period.",
+  },
+  {
+    id: 'annual',
+    question: 'Do you offer annual billing?',
+    answer:
+      'Yes. Switch to yearly billing using the toggle above the pricing cards to save up to 22%. Starter is $84/year ($7/mo) and Pro is $180/year ($15/mo).',
   },
   {
     id: 'monitor-limit',
@@ -113,44 +80,7 @@ export default function PricingPage() {
         </p>
       </div>
 
-      {/* Plan cards */}
-      <div className="mt-16 grid gap-8 md:grid-cols-3">
-        {plans.map((plan) => (
-          <Card
-            key={plan.name}
-            className={
-              plan.highlighted ? 'border-primary shadow-lg' : undefined
-            }
-          >
-            <CardHeader>
-              {plan.badge && (
-                <div className="bg-primary/10 text-primary mb-2 w-fit rounded-full px-3 py-1 text-xs font-medium">
-                  {plan.badge}
-                </div>
-              )}
-              <CardTitle>{plan.name}</CardTitle>
-              <CardDescription>{plan.description}</CardDescription>
-              <div className="mt-4">
-                <span className="text-4xl font-bold">{plan.price}</span>
-                <span className="text-muted-foreground">/month</span>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {plan.features.map((feature) => (
-                <div key={feature} className="flex items-center gap-2 text-sm">
-                  <Check className="h-4 w-4 text-green-500" />
-                  {feature}
-                </div>
-              ))}
-              <Link href="/login" className="mt-4 block">
-                <Button variant={plan.ctaVariant} className="w-full">
-                  {plan.cta}
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <PricingCards />
 
       {/* Feature comparison */}
       <div className="mt-24">
@@ -172,44 +102,7 @@ export default function PricingPage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {[
-                {
-                  feature: 'Monitors',
-                  free: '30',
-                  starter: '100',
-                  pro: 'Unlimited',
-                },
-                {
-                  feature: 'Check interval',
-                  free: '60s',
-                  starter: '30s',
-                  pro: '10s',
-                },
-                {
-                  feature: 'Ping history',
-                  free: '7 days',
-                  starter: '30 days',
-                  pro: '90 days',
-                },
-                {
-                  feature: 'Alert channels',
-                  free: '2',
-                  starter: '5',
-                  pro: 'Unlimited',
-                },
-                {
-                  feature: 'API access',
-                  free: 'Yes',
-                  starter: 'Yes',
-                  pro: 'Yes',
-                },
-                {
-                  feature: 'Email support',
-                  free: '—',
-                  starter: 'Yes',
-                  pro: 'Priority',
-                },
-              ].map((row) => (
+              {comparisonRows.map((row) => (
                 <tr key={row.feature}>
                   <td className="px-4 py-3 font-medium">{row.feature}</td>
                   <td className="text-muted-foreground px-4 py-3 text-center">

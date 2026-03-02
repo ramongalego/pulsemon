@@ -175,7 +175,7 @@ export function UpgradeModal({
                     : 'bg-green-500/10 text-green-600'
                 }`}
               >
-                Save up to 22%
+                Save 22%
               </span>
             </button>
             <button
