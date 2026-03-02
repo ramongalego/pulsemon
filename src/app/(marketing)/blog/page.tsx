@@ -23,7 +23,7 @@ export default function BlogPage() {
   const [featured, ...rest] = posts;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-16 md:py-24">
+    <div className="mx-auto max-w-6xl px-4 py-16">
       <div className="mx-auto max-w-3xl">
         <h1 className="text-4xl font-bold tracking-tight md:text-5xl">Blog</h1>
         <p className="text-muted-foreground mt-4 text-lg">
@@ -35,7 +35,7 @@ export default function BlogPage() {
         <div className="mx-auto mt-12 max-w-3xl">
           <Link
             href={`/blog/${featured.slug}`}
-            className="bg-muted/50 group block rounded-xl border p-8 transition-colors hover:border-primary/30 hover:bg-muted/80"
+            className="bg-muted/50 group hover:border-primary/30 hover:bg-muted/80 block rounded-xl border p-8 transition-colors"
           >
             <div className="flex items-center gap-3">
               <Badge variant="secondary">{featured.tag}</Badge>
@@ -62,7 +62,7 @@ export default function BlogPage() {
 
       {rest.length > 0 && (
         <div className="mx-auto mt-12 max-w-3xl">
-          <h2 className="text-muted-foreground mb-6 text-sm font-medium uppercase tracking-wide">
+          <h2 className="text-muted-foreground mb-6 text-sm font-medium tracking-wide uppercase">
             More articles
           </h2>
           <div className="divide-y">
