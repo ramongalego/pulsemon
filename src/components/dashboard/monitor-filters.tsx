@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search } from 'lucide-react';
+import { ArrowUpDown, Search } from 'lucide-react';
 
 export function MonitorFilters() {
   const router = useRouter();
@@ -83,14 +83,15 @@ export function MonitorFilters() {
         value={currentSort}
         onValueChange={(v) => updateParams('sort', v)}
       >
-        <SelectTrigger className="w-[140px]">
+        <SelectTrigger className="w-[160px]">
+          <ArrowUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
           <SelectValue placeholder="Sort by" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="created">Created</SelectItem>
-          <SelectItem value="name">Name</SelectItem>
+          <SelectItem value="created">Newest first</SelectItem>
+          <SelectItem value="name">Name (A–Z)</SelectItem>
           <SelectItem value="status">Status</SelectItem>
-          <SelectItem value="lastPing">Last Ping</SelectItem>
+          <SelectItem value="lastPing">Last ping</SelectItem>
         </SelectContent>
       </Select>
     </div>
