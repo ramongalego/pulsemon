@@ -29,12 +29,12 @@ You need accounts for these services (all have generous free tiers):
 4. Go to QStash in the Upstash console, copy the signing keys
 5. Set `QSTASH_CURRENT_SIGNING_KEY` and `QSTASH_NEXT_SIGNING_KEY` in `.env.local`
 
-#### Auth.js (Authentication)
+#### Auth.js (Authentication) - DONE
 
 1. Generate a secret: `openssl rand -base64 32`
 2. Set `AUTH_SECRET` in `.env.local`
 
-##### GitHub OAuth
+##### GitHub OAuth - DONE
 
 1. Go to [github.com/settings/developers](https://github.com/settings/developers)
 2. Create a new OAuth App
@@ -42,7 +42,7 @@ You need accounts for these services (all have generous free tiers):
    - Callback URL: `http://localhost:3000/api/auth/callback/github`
 3. Set `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET` in `.env.local`
 
-##### Google OAuth
+##### Google OAuth - DONE
 
 1. Go to [console.cloud.google.com/apis/credentials](https://console.cloud.google.com/apis/credentials)
 2. Create an OAuth 2.0 Client ID (Web application)

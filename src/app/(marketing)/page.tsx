@@ -153,7 +153,7 @@ export default function LandingPage() {
               scheduled scripts. If your job doesn&apos;t check in on time, you
               know in under 60 seconds.
             </p>
-            <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row lg:justify-start sm:justify-center">
+            <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start">
               <Link href="/login">
                 <Button size="lg" className="w-full sm:w-auto">
                   Get Started Free
