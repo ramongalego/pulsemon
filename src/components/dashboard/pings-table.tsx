@@ -64,16 +64,16 @@ export function PingsTable({
 
   return (
     <div className="space-y-2">
-      <div className="text-muted-foreground grid grid-cols-4 gap-4 px-2 text-xs font-medium">
+      <div className="text-muted-foreground grid grid-cols-3 gap-4 px-2 text-xs font-medium sm:grid-cols-4">
         <span>Status</span>
         <span>Received</span>
         <span>Duration</span>
-        <span>Source IP</span>
+        <span className="hidden sm:block">Source IP</span>
       </div>
       {allPings.map((ping) => (
         <div
           key={ping.id}
-          className="grid grid-cols-4 gap-4 rounded-lg border px-2 py-2 text-sm"
+          className="grid grid-cols-3 gap-4 rounded-lg border px-2 py-2 text-sm sm:grid-cols-4"
         >
           <span
             className={
@@ -88,7 +88,7 @@ export function PingsTable({
           <span className="text-muted-foreground">
             {ping.duration ? `${ping.duration}ms` : '—'}
           </span>
-          <span className="text-muted-foreground truncate">
+          <span className="text-muted-foreground hidden truncate sm:block">
             {ping.sourceIp || '—'}
           </span>
         </div>

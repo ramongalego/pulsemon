@@ -141,15 +141,15 @@ export default async function MonitorDetailPage({
       {/* Auto-refresh: polls for first ping when "new", refreshes every 10s otherwise */}
       <PingWatcher monitorId={monitor.id} status={monitor.status} />
 
-      <div className="flex items-center gap-4">
-        <Link href="/dashboard">
+      <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+        <Link href="/dashboard" className="mt-1 sm:mt-0">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
               {monitor.name}
             </h1>
             <StatusBadge status={monitor.status} />
@@ -174,7 +174,7 @@ export default async function MonitorDetailPage({
               isPaused={monitor.isPaused}
             />
           </div>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground mt-1 text-sm">
             Pings every {monitor.expectedInterval}s with {monitor.gracePeriod}s
             grace period
             {monitor.lastPingAt && (

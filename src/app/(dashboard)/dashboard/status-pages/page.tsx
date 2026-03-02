@@ -102,9 +102,9 @@ export default async function StatusPagesPage() {
                 return (
                   <div
                     key={page.id}
-                    className="border-border flex items-center justify-between rounded-lg border p-4"
+                    className="border-border space-y-2 rounded-lg border p-4 sm:flex sm:items-center sm:justify-between sm:space-y-0"
                   >
-                    <div className="space-y-1">
+                    <div className="min-w-0 space-y-1">
                       <div className="flex items-center gap-2 font-medium">
                         {page.title}
                         {page.isPublic ? (
@@ -119,7 +119,7 @@ export default async function StatusPagesPage() {
                         )}
                       </div>
                       <div className="flex items-center gap-2">
-                        <code className="bg-muted truncate rounded px-2 py-1 text-xs">
+                        <code className="bg-muted block min-w-0 truncate rounded px-2 py-1 text-xs">
                           {publicUrl}
                         </code>
                         <CopyButton text={publicUrl} />
@@ -138,7 +138,10 @@ export default async function StatusPagesPage() {
                         </a>
                       </div>
                     </div>
-                    <Link href={`/dashboard/status-pages/${page.id}`}>
+                    <Link
+                      href={`/dashboard/status-pages/${page.id}`}
+                      className="shrink-0"
+                    >
                       <Button variant="outline" size="sm">
                         Edit
                       </Button>

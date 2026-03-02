@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
+import { MarketingMobileNav } from '@/components/shared/marketing-mobile-nav';
 
 export default function MarketingLayout({
   children,
@@ -12,10 +13,13 @@ export default function MarketingLayout({
     <div className="flex min-h-screen flex-col">
       <header className="bg-background/80 sticky top-0 z-50 border-b backdrop-blur-sm">
         <nav className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2">
-            <Activity className="text-primary h-6 w-6" />
-            <span className="text-lg font-semibold">PulseMon</span>
-          </Link>
+          <div className="flex items-center gap-2">
+            <MarketingMobileNav />
+            <Link href="/" className="flex items-center gap-2">
+              <Activity className="text-primary h-6 w-6" />
+              <span className="text-lg font-semibold">PulseMon</span>
+            </Link>
+          </div>
           <div className="hidden items-center gap-6 md:flex">
             <Link
               href="/blog"
@@ -36,15 +40,20 @@ export default function MarketingLayout({
               Pricing
             </Link>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
             <ThemeToggle />
-            <Link href="/login">
+            <Link href="/login" className="hidden md:block">
               <Button variant="ghost" size="sm">
                 Sign in
               </Button>
             </Link>
             <Link href="/login">
-              <Button size="sm">Start Monitoring - Free</Button>
+              <Button size="sm">
+                <span className="hidden sm:inline">
+                  Start Monitoring - Free
+                </span>
+                <span className="sm:hidden">Sign in</span>
+              </Button>
             </Link>
           </div>
         </nav>

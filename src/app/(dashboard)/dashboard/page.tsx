@@ -225,8 +225,8 @@ export default async function DashboardPage({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {/* Header row */}
-                  <div className="text-muted-foreground grid grid-cols-5 gap-4 px-3 text-xs font-medium">
+                  {/* Header row - hidden on mobile */}
+                  <div className="text-muted-foreground hidden grid-cols-5 gap-4 px-3 text-xs font-medium md:grid">
                     <span>Name</span>
                     <span>Status</span>
                     <span>Last Ping</span>
@@ -240,27 +240,33 @@ export default async function DashboardPage({
                       href={`/dashboard/monitors/${monitor.id}`}
                       className="block"
                     >
-                      <div className="hover:bg-muted/50 grid grid-cols-5 items-center gap-4 rounded-lg border px-3 py-3 text-sm transition-colors">
-                        <div>
+                      <div className="hover:bg-muted/50 grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border px-3 py-3 text-sm transition-colors md:grid-cols-5 md:gap-4">
+                        <div className="min-w-0">
                           <span className="font-medium">{monitor.name}</span>
                           <p className="text-muted-foreground text-xs">
                             /{monitor.slug}
                           </p>
                         </div>
-                        <div>
+                        <div className="flex items-center gap-2 md:contents">
                           <StatusBadge status={monitor.status} />
+                          <div className="flex md:hidden">
+                            <PauseResumeButton
+                              monitorId={monitor.id}
+                              isPaused={monitor.isPaused}
+                            />
+                          </div>
                         </div>
-                        <div className="text-muted-foreground">
+                        <div className="text-muted-foreground hidden md:block">
                           {monitor.lastPingAt ? (
                             <RelativeTime date={monitor.lastPingAt} />
                           ) : (
                             <span className="text-xs">Never</span>
                           )}
                         </div>
-                        <div className="text-muted-foreground">
+                        <div className="text-muted-foreground hidden md:block">
                           {monitor.expectedInterval}s
                         </div>
-                        <div className="flex justify-end">
+                        <div className="hidden justify-end md:flex">
                           <PauseResumeButton
                             monitorId={monitor.id}
                             isPaused={monitor.isPaused}
