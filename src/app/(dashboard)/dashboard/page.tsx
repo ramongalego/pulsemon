@@ -240,7 +240,9 @@ export default async function DashboardPage({
                       href={`/dashboard/monitors/${monitor.id}`}
                       className="block"
                     >
-                      <div className="hover:bg-muted/50 grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border px-3 py-3 text-sm transition-colors md:grid-cols-5 md:gap-4">
+                      <div
+                        className={`hover:bg-muted/50 grid grid-cols-[1fr_auto] items-center gap-3 rounded-lg border px-3 py-3 text-sm transition-colors md:grid-cols-5 md:gap-4 ${monitor.isPaused ? 'opacity-60' : ''}`}
+                      >
                         <div className="min-w-0">
                           <span className="font-medium">{monitor.name}</span>
                           <p className="text-muted-foreground text-xs">
@@ -248,7 +250,13 @@ export default async function DashboardPage({
                           </p>
                         </div>
                         <div className="flex items-center gap-2 md:contents">
-                          <StatusBadge status={monitor.status} />
+                          {monitor.isPaused ? (
+                            <span className="text-muted-foreground bg-muted w-fit rounded-full px-2 py-0.5 text-xs font-medium">
+                              Paused
+                            </span>
+                          ) : (
+                            <StatusBadge status={monitor.status} />
+                          )}
                           <div className="flex md:hidden">
                             <PauseResumeButton
                               monitorId={monitor.id}

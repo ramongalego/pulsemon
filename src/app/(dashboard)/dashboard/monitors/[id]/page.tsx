@@ -152,7 +152,13 @@ export default async function MonitorDetailPage({
             <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
               {monitor.name}
             </h1>
-            <StatusBadge status={monitor.status} />
+            {monitor.isPaused ? (
+              <span className="text-muted-foreground bg-muted rounded-full px-2 py-0.5 text-xs font-medium">
+                Paused
+              </span>
+            ) : (
+              <StatusBadge status={monitor.status} />
+            )}
             {uptimePercent !== null ? (
               <Badge
                 variant="outline"
