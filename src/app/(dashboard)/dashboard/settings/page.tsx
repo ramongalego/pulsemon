@@ -16,8 +16,10 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ApiKeyManager } from '@/components/dashboard/api-key-manager';
 import { UpgradeButton } from '@/components/dashboard/upgrade-button';
+import { ManageSubscriptionButton } from '@/components/dashboard/manage-subscription-button';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
 import { getUserUsage } from '@/lib/plan-enforcement';
+import { users } from '@/lib/db/schema';
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -28,6 +30,13 @@ export default async function SettingsPage() {
   const limits = getPlanLimits(plan);
   const usage = await getUserUsage(userId);
   const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
+
+  const [userRecord] = await db
+    .select({ stripeSubscriptionId: users.stripeSubscriptionId })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  const hasSubscription = !!userRecord?.stripeSubscriptionId;
 
   const keys = await db
     .select({
@@ -104,11 +113,18 @@ export default async function SettingsPage() {
               <span>{limits.checkInterval}s minimum</span>
             </div>
           </div>
-          {plan !== 'pro' && plan !== 'lifetime' && (
-            <UpgradeButton currentPlan={plan} variant="outline" size="default">
-              Upgrade Plan
-            </UpgradeButton>
-          )}
+          <div className="flex gap-2">
+            {plan !== 'pro' && plan !== 'lifetime' && (
+              <UpgradeButton
+                currentPlan={plan}
+                variant="outline"
+                size="default"
+              >
+                Upgrade Plan
+              </UpgradeButton>
+            )}
+            {hasSubscription && <ManageSubscriptionButton />}
+          </div>
         </CardContent>
       </Card>
 

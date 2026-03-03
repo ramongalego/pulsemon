@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Check, X } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Check, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -98,6 +98,36 @@ export function UpgradeModal({
     currentPlan === 'lifetime' ? 'lifetime' : 'monthly',
   );
   const [lifetimeCount, setLifetimeCount] = useState(0);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+
+  const handleCheckout = useCallback(
+    async (
+      plan: 'starter' | 'pro' | 'lifetime',
+      billingCycle: 'monthly' | 'yearly',
+    ) => {
+      setLoadingPlan(plan);
+      try {
+        const res = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan, billing: billingCycle }),
+        });
+        const json = await res.json();
+        if (json.error) {
+          toast.error(json.error.message ?? 'Something went wrong');
+          return;
+        }
+        if (json.data?.url) {
+          window.location.href = json.data.url;
+        }
+      } catch {
+        toast.error('Failed to start checkout. Please try again.');
+      } finally {
+        setLoadingPlan(null);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -255,12 +285,17 @@ export function UpgradeModal({
                   ) : isUpgrade ? (
                     <Button
                       className="w-full"
-                      onClick={() => {
-                        toast.info(
-                          'Stripe checkout coming soon — upgrade not yet wired up.',
-                        );
-                      }}
+                      disabled={loadingPlan === plan.key}
+                      onClick={() =>
+                        handleCheckout(
+                          plan.key as 'starter' | 'pro',
+                          billing as 'monthly' | 'yearly',
+                        )
+                      }
                     >
+                      {loadingPlan === plan.key ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : null}
                       Upgrade to {plan.name}
                     </Button>
                   ) : (
@@ -318,12 +353,12 @@ export function UpgradeModal({
                   <Button
                     className="w-full bg-amber-600 hover:bg-amber-700"
                     size="lg"
-                    onClick={() => {
-                      toast.info(
-                        'Stripe checkout coming soon — upgrade not yet wired up.',
-                      );
-                    }}
+                    disabled={loadingPlan === 'lifetime'}
+                    onClick={() => handleCheckout('lifetime', 'monthly')}
                   >
+                    {loadingPlan === 'lifetime' ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : null}
                     Get Lifetime Access
                   </Button>
                 )}
