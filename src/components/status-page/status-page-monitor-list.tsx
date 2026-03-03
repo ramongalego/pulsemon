@@ -54,6 +54,7 @@ export function StatusPageMonitorList({
             <MiniUptimeBar
               incidents={monitorIncidents}
               monitorCreatedAt={monitor.createdAt}
+              isWaiting={monitor.status === 'new'}
             />
           </div>
         );

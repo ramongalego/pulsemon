@@ -88,17 +88,21 @@ export function StatusPageView({ slug }: { slug: string }) {
     return <StatusPageSkeleton />;
   }
 
-  // Compute overall status
-  const monitorStatuses = data.monitors.map((m) => m.status);
+  // Compute overall status (ignore waiting/new monitors)
+  const activeStatuses = data.monitors
+    .filter((m) => m.status !== 'new')
+    .map((m) => m.status);
   const allUp =
-    monitorStatuses.length > 0 && monitorStatuses.every((s) => s === 'up');
+    activeStatuses.length > 0 && activeStatuses.every((s) => s === 'up');
   const allDown =
-    monitorStatuses.length > 0 && monitorStatuses.every((s) => s === 'down');
+    activeStatuses.length > 0 && activeStatuses.every((s) => s === 'down');
   const overallStatus: 'operational' | 'partial' | 'major' = allUp
     ? 'operational'
     : allDown
       ? 'major'
-      : 'partial';
+      : activeStatuses.length === 0
+        ? 'operational'
+        : 'partial';
 
   // Compute overall uptime
   const uptimes = data.monitors

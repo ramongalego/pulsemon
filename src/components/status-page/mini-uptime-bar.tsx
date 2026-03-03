@@ -3,6 +3,7 @@ import type { IncidentData } from './status-page-view';
 const SLOT_COLORS = {
   ok: 'bg-green-500',
   incident: 'bg-red-500',
+  waiting: 'bg-gray-400 dark:bg-gray-600',
 };
 
 /**
@@ -12,9 +13,11 @@ const SLOT_COLORS = {
 export function MiniUptimeBar({
   incidents,
   monitorCreatedAt,
+  isWaiting = false,
 }: {
   incidents: IncidentData[];
   monitorCreatedAt: string;
+  isWaiting?: boolean;
 }) {
   const now = new Date();
   const created = new Date(monitorCreatedAt);
@@ -30,19 +33,25 @@ export function MiniUptimeBar({
   const slotCount = 30;
   const slotMs = windowMs / slotCount;
 
-  const slots: ('ok' | 'incident')[] = [];
+  const slots: ('ok' | 'incident' | 'waiting')[] = [];
 
-  for (let i = 0; i < slotCount; i++) {
-    const slotStart = new Date(windowStart.getTime() + i * slotMs);
-    const slotEnd = new Date(windowStart.getTime() + (i + 1) * slotMs);
+  if (isWaiting) {
+    for (let i = 0; i < slotCount; i++) {
+      slots.push('waiting');
+    }
+  } else {
+    for (let i = 0; i < slotCount; i++) {
+      const slotStart = new Date(windowStart.getTime() + i * slotMs);
+      const slotEnd = new Date(windowStart.getTime() + (i + 1) * slotMs);
 
-    const hadIncident = incidents.some((inc) => {
-      const start = new Date(inc.startedAt);
-      const end = inc.resolvedAt ? new Date(inc.resolvedAt) : now;
-      return start < slotEnd && end > slotStart;
-    });
+      const hadIncident = incidents.some((inc) => {
+        const start = new Date(inc.startedAt);
+        const end = inc.resolvedAt ? new Date(inc.resolvedAt) : now;
+        return start < slotEnd && end > slotStart;
+      });
 
-    slots.push(hadIncident ? 'incident' : 'ok');
+      slots.push(hadIncident ? 'incident' : 'ok');
+    }
   }
 
   // Label: show actual window, not always "30 days"
