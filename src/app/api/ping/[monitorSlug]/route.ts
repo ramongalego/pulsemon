@@ -169,30 +169,32 @@ async function handlePing(
               .limit(1);
 
             if (fullMonitor) {
+              // Send one recovery alert for the most recent incident
+              const latest = openIncidents[openIncidents.length - 1];
+              const resolvedIncident: Incident = {
+                ...latest,
+                resolvedAt: new Date(now),
+              };
+
+              try {
+                await dispatchAlerts(
+                  fullMonitor as Monitor,
+                  'monitor.up',
+                  resolvedIncident,
+                );
+              } catch (alertErr) {
+                console.error(
+                  `Recovery alert failed for incident ${latest.id}, leaving open for retry:`,
+                  alertErr,
+                );
+              }
+
+              // Resolve all open incidents
               for (const incident of openIncidents) {
-                const resolvedIncident: Incident = {
-                  ...incident,
-                  resolvedAt: new Date(now),
-                };
-
-                // Dispatch recovery alert — only resolve if it succeeds
-                try {
-                  await dispatchAlerts(
-                    fullMonitor as Monitor,
-                    'monitor.up',
-                    resolvedIncident,
-                  );
-
-                  await db
-                    .update(incidents)
-                    .set({ resolvedAt: new Date(now) })
-                    .where(eq(incidents.id, incident.id));
-                } catch (alertErr) {
-                  console.error(
-                    `Recovery alert failed for incident ${incident.id}, leaving open for retry:`,
-                    alertErr,
-                  );
-                }
+                await db
+                  .update(incidents)
+                  .set({ resolvedAt: new Date(now) })
+                  .where(eq(incidents.id, incident.id));
               }
             }
           }
