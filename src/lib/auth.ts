@@ -8,7 +8,7 @@ import { db } from '@/lib/db';
 import { users, accounts, sessions, verificationTokens } from '@/lib/db/schema';
 import { resend } from '@/lib/resend';
 
-const FROM = 'PulseMon <onboarding@resend.dev>';
+const FROM = 'PulseMon <noreply@pulsemon.dev>';
 
 const providers: Provider[] = [
   Resend({
