@@ -71,6 +71,7 @@ export async function checkMonitors(): Promise<CheckResult[]> {
           monitorId: monitor.id,
           startedAt: new Date(now),
           cause: 'missed_ping',
+          alertsSent: 1,
         })
         .returning();
 
