@@ -49,7 +49,7 @@ You need accounts for these services (all have generous free tiers):
    - Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
 3. Set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` in `.env.local`
 
-#### Resend (Email)
+#### Resend (Email) - DONE
 
 1. Go to [resend.com](https://resend.com) and create a free account
 2. Create an API key
