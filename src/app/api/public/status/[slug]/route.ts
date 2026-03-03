@@ -40,6 +40,7 @@ export async function GET(
       monitorId: statusPageMonitors.monitorId,
       name: monitors.name,
       status: monitors.status,
+      isPaused: monitors.isPaused,
       lastPingAt: monitors.lastPingAt,
       createdAt: monitors.createdAt,
     })
@@ -48,9 +49,12 @@ export async function GET(
     .where(eq(statusPageMonitors.statusPageId, page.id))
     .orderBy(statusPageMonitors.sortOrder);
 
-  // Fetch incidents for last 14 days for all linked monitors
+  // Hide paused monitors from public status page
+  const visibleMonitors = linkedMonitors.filter((m) => !m.isPaused);
+
+  // Fetch incidents for last 14 days for visible monitors
   const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
-  const monitorIds = linkedMonitors.map((m) => m.monitorId);
+  const monitorIds = visibleMonitors.map((m) => m.monitorId);
 
   let recentIncidents: {
     id: string;
@@ -102,7 +106,7 @@ export async function GET(
   }
 
   // Compute uptime per monitor
-  const monitorData = linkedMonitors.map((m) => {
+  const monitorData = visibleMonitors.map((m) => {
     const monitorIncidents = uptimeIncidents.filter(
       (i) => i.monitorId === m.monitorId,
     );
@@ -123,7 +127,7 @@ export async function GET(
 
   // Build safe incident list (no IDs exposed)
   const incidentData = recentIncidents.map((i) => {
-    const monitor = linkedMonitors.find((m) => m.monitorId === i.monitorId);
+    const monitor = visibleMonitors.find((m) => m.monitorId === i.monitorId);
     return {
       monitorName: monitor ? monitor.displayName || monitor.name : 'Unknown',
       startedAt: i.startedAt.toISOString(),
