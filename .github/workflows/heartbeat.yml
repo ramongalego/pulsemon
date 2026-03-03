@@ -9,4 +9,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Ping PulseMon
-        run: curl -fsS https://pulsemon.dev/api/ping/github-heartbeat
+        run: curl -fsS https://www.pulsemon.dev/api/ping/github-heartbeat
