@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { after } from 'next/server';
 import { redis, redisKeys } from '@/lib/redis';
 import { db } from '@/lib/db';
 import { monitors, pings, incidents } from '@/lib/db/schema';
@@ -111,13 +112,14 @@ async function handlePing(
       monitor.expectedInterval + monitor.gracePeriod + REDIS_TTL_BUFFER;
     await redis.set(redisKeys.lastPing(monitor.id), now, { ex: ttl });
 
-    // Update monitor + insert ping in Postgres (non-blocking)
+    // Update monitor + insert ping in Postgres via after() so it
+    // runs after the response is sent but Vercel keeps the function alive.
     const sourceIp =
       req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
       req.headers.get('x-real-ip') ??
       null;
 
-    void (async () => {
+    after(async () => {
       try {
         // Issue #2: Only set status to 'up' on success pings.
         // Fail pings update lastPingAt but leave status unchanged.
@@ -198,7 +200,7 @@ async function handlePing(
       } catch (err) {
         console.error('Background ping sync failed:', err);
       }
-    })();
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {
