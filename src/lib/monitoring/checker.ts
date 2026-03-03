@@ -44,7 +44,27 @@ export async function checkMonitors(): Promise<CheckResult[]> {
     );
 
     if (isLate && monitor.status !== 'down') {
-      // Monitor just went down
+      // Atomically set status to 'down' only if it hasn't been set already
+      // (guards against overlapping checker runs / QStash retries)
+      const [updated] = await db
+        .update(monitors)
+        .set({ status: 'down', updatedAt: new Date(now) })
+        .where(and(eq(monitors.id, monitor.id), ne(monitors.status, 'down')))
+        .returning({ id: monitors.id });
+
+      if (!updated) {
+        // Another checker run already handled this — skip
+        results.push({
+          monitorId: monitor.id,
+          monitorName: monitor.name,
+          slug: monitor.slug,
+          previousStatus: monitor.status,
+          newStatus: 'down',
+          action: 'none',
+        });
+        continue;
+      }
+
       const [incident] = await db
         .insert(incidents)
         .values({
@@ -53,11 +73,6 @@ export async function checkMonitors(): Promise<CheckResult[]> {
           cause: 'missed_ping',
         })
         .returning();
-
-      await db
-        .update(monitors)
-        .set({ status: 'down', updatedAt: new Date(now) })
-        .where(eq(monitors.id, monitor.id));
 
       await dispatchAlerts(monitor, 'monitor.down', incident);
 

@@ -4,7 +4,9 @@ import { sql } from 'drizzle-orm';
 
 export async function GET(req: Request) {
   // Verify the request is from Vercel Cron
-  if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (
+    req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`
+  ) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
