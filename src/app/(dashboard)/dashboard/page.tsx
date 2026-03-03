@@ -87,8 +87,8 @@ export default async function DashboardPage({
 
   const stats = {
     total: allMonitors.length,
-    up: allMonitors.filter((m) => m.status === 'up').length,
-    down: allMonitors.filter((m) => m.status === 'down').length,
+    up: allMonitors.filter((m) => !m.isPaused && m.status === 'up').length,
+    down: allMonitors.filter((m) => !m.isPaused && m.status === 'down').length,
     paused: allMonitors.filter((m) => m.isPaused).length,
   };
 
