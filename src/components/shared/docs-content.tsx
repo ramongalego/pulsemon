@@ -805,7 +805,7 @@ def handle_webhook():
           <p className="text-muted-foreground text-sm">
             Use PulseMon from WhatsApp, Telegram, or Slack via{' '}
             <a
-              href="https://openclaw.dev"
+              href="https://clawhub.ai/raygaledev/pulsemon"
               target="_blank"
               rel="noopener noreferrer"
               className="text-foreground underline underline-offset-4"
