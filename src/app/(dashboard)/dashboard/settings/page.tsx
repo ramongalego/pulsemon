@@ -20,6 +20,7 @@ import { ManageSubscriptionButton } from '@/components/dashboard/manage-subscrip
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
 import { getUserUsage } from '@/lib/plan-enforcement';
 import { users } from '@/lib/db/schema';
+import { stripe } from '@/lib/stripe';
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -37,6 +38,27 @@ export default async function SettingsPage() {
     .where(eq(users.id, userId))
     .limit(1);
   const hasSubscription = !!userRecord?.stripeSubscriptionId;
+
+  let cancelAtDate: string | null = null;
+  if (userRecord?.stripeSubscriptionId) {
+    try {
+      const sub = await stripe.subscriptions.retrieve(
+        userRecord.stripeSubscriptionId,
+      );
+      if (sub.cancel_at_period_end && sub.cancel_at) {
+        cancelAtDate = new Date(sub.cancel_at * 1000).toLocaleDateString(
+          'en-US',
+          {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+          },
+        );
+      }
+    } catch {
+      // Subscription may no longer exist in Stripe — ignore
+    }
+  }
 
   const keys = await db
     .select({
@@ -125,6 +147,12 @@ export default async function SettingsPage() {
             )}
             {hasSubscription && <ManageSubscriptionButton />}
           </div>
+          {cancelAtDate && (
+            <p className="text-muted-foreground mt-2 text-sm">
+              Your subscription has been canceled. You&apos;ll continue to have
+              access to your current plan until {cancelAtDate}.
+            </p>
+          )}
         </CardContent>
       </Card>
 
