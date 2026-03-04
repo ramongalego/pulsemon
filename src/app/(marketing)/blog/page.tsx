@@ -94,6 +94,19 @@ export default function BlogPage() {
           </div>
         </div>
       )}
+
+      <div className="mx-auto mt-16 max-w-3xl rounded-lg border p-6 text-center">
+        <p className="text-muted-foreground text-sm">
+          You can also manage your monitors via chat using the{' '}
+          <Link
+            href="/docs#openclaw"
+            className="text-foreground underline underline-offset-4"
+          >
+            PulseMon skill for OpenClaw
+          </Link>
+          . Works with WhatsApp, Telegram, and Slack.
+        </p>
+      </div>
     </div>
   );
 }
