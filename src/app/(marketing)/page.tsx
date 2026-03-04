@@ -123,7 +123,7 @@ export default function LandingPage() {
                 name: 'What languages/frameworks do you support?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Any. If it can make an HTTP request, it works. Bash, Python, Node.js, Go, Ruby, PHP, Docker — we have examples for all of them in the docs.',
+                  text: 'Any. If it can make an HTTP request, it works. Bash, Python, Node.js, Go, Ruby, PHP, Docker. We have examples for all of them in the docs.',
                 },
               },
               {

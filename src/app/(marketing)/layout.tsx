@@ -80,13 +80,8 @@ export default function MarketingLayout({
                   </Link>
                 </li>
                 <li>
-                  <Link href="/docs" className="hover:text-foreground">
-                    Documentation
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/login" className="hover:text-foreground">
-                    Dashboard
+                  <Link href="/blog" className="hover:text-foreground">
+                    Blog
                   </Link>
                 </li>
               </ul>
@@ -96,17 +91,17 @@ export default function MarketingLayout({
               <ul className="text-muted-foreground space-y-2 text-sm">
                 <li>
                   <Link href="/docs" className="hover:text-foreground">
+                    Documentation
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/docs#api-keys" className="hover:text-foreground">
                     API Reference
                   </Link>
                 </li>
                 <li>
-                  <Link href="/docs" className="hover:text-foreground">
-                    Quick Start
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/blog" className="hover:text-foreground">
-                    Blog
+                  <Link href="/status" className="hover:text-foreground">
+                    Status
                   </Link>
                 </li>
               </ul>

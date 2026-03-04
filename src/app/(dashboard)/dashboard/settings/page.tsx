@@ -20,7 +20,6 @@ import { ManageSubscriptionButton } from '@/components/dashboard/manage-subscrip
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
 import { getUserUsage } from '@/lib/plan-enforcement';
 import { users } from '@/lib/db/schema';
-import { stripe } from '@/lib/stripe';
 
 export default async function SettingsPage() {
   const session = await auth();
@@ -38,33 +37,6 @@ export default async function SettingsPage() {
     .where(eq(users.id, userId))
     .limit(1);
   const hasSubscription = !!userRecord?.stripeSubscriptionId;
-
-  let cancelAtDate: string | null = null;
-  if (userRecord?.stripeSubscriptionId) {
-    try {
-      const sub = await stripe.subscriptions.retrieve(
-        userRecord.stripeSubscriptionId,
-      );
-      if (sub.cancel_at_period_end) {
-        // cancel_at holds the period end date when cancel_at_period_end is true
-        const endTimestamp =
-          sub.cancel_at ??
-          (sub as unknown as { current_period_end: number }).current_period_end;
-        if (endTimestamp) {
-          cancelAtDate = new Date(endTimestamp * 1000).toLocaleDateString(
-            'en-US',
-            {
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric',
-            },
-          );
-        }
-      }
-    } catch {
-      // Subscription may no longer exist in Stripe — ignore
-    }
-  }
 
   const keys = await db
     .select({
@@ -153,12 +125,6 @@ export default async function SettingsPage() {
             )}
             {hasSubscription && <ManageSubscriptionButton />}
           </div>
-          {cancelAtDate && (
-            <p className="text-muted-foreground mt-2 text-sm">
-              Your subscription has been canceled. You&apos;ll continue to have
-              access to your current plan until {cancelAtDate}.
-            </p>
-          )}
         </CardContent>
       </Card>
 
