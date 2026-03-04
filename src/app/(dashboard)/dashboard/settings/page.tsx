@@ -45,15 +45,21 @@ export default async function SettingsPage() {
       const sub = await stripe.subscriptions.retrieve(
         userRecord.stripeSubscriptionId,
       );
-      if (sub.cancel_at_period_end && sub.cancel_at) {
-        cancelAtDate = new Date(sub.cancel_at * 1000).toLocaleDateString(
-          'en-US',
-          {
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-          },
-        );
+      if (sub.cancel_at_period_end) {
+        // cancel_at holds the period end date when cancel_at_period_end is true
+        const endTimestamp =
+          sub.cancel_at ??
+          (sub as unknown as { current_period_end: number }).current_period_end;
+        if (endTimestamp) {
+          cancelAtDate = new Date(endTimestamp * 1000).toLocaleDateString(
+            'en-US',
+            {
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+            },
+          );
+        }
       }
     } catch {
       // Subscription may no longer exist in Stripe — ignore
