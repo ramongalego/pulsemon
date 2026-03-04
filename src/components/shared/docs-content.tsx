@@ -798,6 +798,38 @@ def handle_webhook():
           </p>
         </div>
       </Section>
+
+      {/* OpenClaw Skill */}
+      <Section dashboard={isDashboard} title="OpenClaw Skill" id="openclaw">
+        <div className="space-y-4">
+          <p className="text-muted-foreground text-sm">
+            Use PulseMon from WhatsApp, Telegram, or Slack via{' '}
+            <a
+              href="https://openclaw.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-foreground underline underline-offset-4"
+            >
+              OpenClaw
+            </a>
+            . Install the skill and manage your monitors with natural language.
+          </p>
+          <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-sm">
+            <code>clawhub install pulsemon</code>
+          </pre>
+          <p className="text-muted-foreground text-sm">
+            Set your API key as an environment variable:
+          </p>
+          <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-sm">
+            <code>PULSEMON_API_KEY=pm_your-key-here</code>
+          </pre>
+          <p className="text-muted-foreground text-sm">
+            Then ask your agent things like &quot;check my monitors&quot;,
+            &quot;create a monitor called nightly-backup that runs daily&quot;,
+            or &quot;pause the data-sync monitor&quot;.
+          </p>
+        </div>
+      </Section>
     </div>
   );
 }
