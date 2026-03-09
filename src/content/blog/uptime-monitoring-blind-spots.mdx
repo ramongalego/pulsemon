@@ -1,0 +1,151 @@
+---
+title: 'Your Uptime Monitor Says Green. Your Users Disagree.'
+description: "Uptime checks tell you your server responds. They don't tell you your app works. Here's what falls through the gap and how to catch it."
+date: '2026-04-07'
+slug: 'uptime-monitoring-blind-spots'
+author: 'Ray'
+tag: 'Monitoring'
+---
+
+Your uptime monitor pings your homepage every 60 seconds and gets a 200 back.
+Green. Healthy. No alerts.
+
+Meanwhile, your checkout is broken because a payment webhook stopped processing
+three hours ago. Your welcome emails are queued and going nowhere. Your nightly
+sync hasn't run since Tuesday.
+
+This is the gap nobody talks about: uptime monitoring tells you your server is
+alive. It does not tell you your app is working.
+
+## What an uptime check actually does
+
+A traditional uptime check sends an HTTP request to a URL and waits for a
+response. If it gets one, the monitor turns green. That's it.
+
+It doesn't know whether your database is accepting writes. It doesn't know
+whether your background workers are running. It doesn't know whether the queue
+has 40,000 unprocessed jobs backed up behind a dead consumer.
+
+A server can respond with 200 OK while being completely broken in every way
+that matters to your users.
+
+## The failure modes your ping check misses
+
+**Background workers dying quietly**
+
+Most apps have workers running alongside the web server — email dispatch,
+order processing, report generation. These processes don't have a URL.
+Nothing pings them. When they crash or get stuck, there's no signal.
+
+Your web server keeps responding 200. The workers sit dead. Orders pile up.
+
+**Queue backlogs**
+
+A queue that's growing is worse than a queue that's empty. Your uptime
+monitor has no idea your jobs are sitting unprocessed because a consumer
+crashed. Users submit forms. The forms go into the queue. Nothing comes out
+the other side.
+
+**Third-party integration failures**
+
+Your app might be up but calling an external API that started returning 500s
+two hours ago. Stripe, Twilio, SendGrid, whatever. Your server is healthy.
+Your users' experience is not.
+
+**Database write failures**
+
+A read-only replica can serve your homepage and return 200 all day while
+your primary database rejects writes. Users think the form submitted. It didn't.
+
+## The fix: make your health check do real work
+
+The standard move is to point your uptime monitor at `/health` and call it
+done. That endpoint usually just returns 200. It tells you the process is
+running, nothing more.
+
+Make it test something real instead.
+
+```python
+# This tells you nothing
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+# This actually catches problems
+@app.get("/health")
+def health():
+    db_ok = check_database_write()
+    queue_depth = get_queue_depth()
+    worker_last_seen = get_worker_heartbeat()
+
+    if not db_ok or queue_depth > 10_000:
+        raise HTTPException(status_code=503)
+
+    return {
+        "db": db_ok,
+        "queue_depth": queue_depth,
+        "worker_last_seen": worker_last_seen,
+    }
+```
+
+Now when your uptime monitor hits `/health`, it's actually probing your
+database writes, your queue state, and whether your workers are alive. A 503
+means something real is broken, not just that the process died.
+
+The rule of thumb: if a failure in X would affect users, X should be in your
+health check.
+
+## Monitoring things that don't have a URL
+
+Workers and scheduled tasks are harder because there's nothing to ping. The
+approach is to flip it — instead of you checking on them, they check in with
+you.
+
+At the end of each successful cycle, the worker hits a heartbeat URL. If the
+heartbeat stops arriving on schedule, you get alerted. We covered this pattern
+in depth for cron jobs [in the last post](/blog/why-your-cron-jobs-fail-silently) —
+the same logic applies to any long-running background process.
+
+```python
+def run_worker():
+    while True:
+        process_queue_batch()
+        requests.get(
+            "https://pulsemon.dev/api/ping/order-queue-worker",
+            timeout=10
+        )
+        time.sleep(30)
+```
+
+The key detail for workers: set the expected interval to at least twice the
+cycle time. A slow batch shouldn't trigger a false alert.
+
+## A note on alert fatigue
+
+One reason teams skip monitoring background tasks is they've been burned by
+flaky alerts before. A monitor that fires constantly gets muted. Then it
+fires for real and nobody notices.
+
+Heartbeat monitoring sidesteps this because the only alert condition is
+absence. There's no false positive from a brief network blip or a slow
+response. Either the job ran and checked in, or it didn't. That binary
+clarity means alerts stay trustworthy and actually get acted on.
+
+## What to audit in your own stack
+
+- Any `/health` endpoint that just returns 200 without touching the database
+- Background workers with no heartbeat
+- Queues with no depth monitoring
+- Third-party integrations you assume are working because your server is up
+
+If it can break without your uptime monitor noticing, it needs a second line
+of defence.
+
+---
+
+PulseMon handles both uptime checks and heartbeat monitors in one place. Point
+it at your health endpoints, set up heartbeats for your workers and jobs, and
+get alerted via email, Slack, Discord, or webhook when something stops working.
+
+Free plan includes 30 monitors with 60-second checks. No credit card required.
+[Start monitoring free](https://pulsemon.dev).
