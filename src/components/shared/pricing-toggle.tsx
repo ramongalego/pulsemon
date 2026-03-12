@@ -25,7 +25,7 @@ const plans = [
     ctaVariant: 'outline' as const,
     features: [
       '30 monitors',
-      '60-second checks',
+      '2 min checks',
       '7 days ping history',
       'Email + 1 integration',
       'API access',
@@ -41,7 +41,7 @@ const plans = [
     ctaVariant: 'default' as const,
     features: [
       '100 monitors',
-      '30-second checks',
+      '60-second checks',
       '30 days ping history',
       'All integrations',
       'Email support',

@@ -99,7 +99,7 @@ export default function LandingPage() {
                 name: 'How fast are alerts?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'We check your monitors every 60 seconds (30s on Starter, 10s on Pro). Once a missed ping is detected, alerts are dispatched within seconds. From miss to inbox: under 2 minutes on the free plan.',
+                  text: 'We check your monitors every 2 minutes on Free (60s on Starter, 10s on Pro). Once a missed ping is detected, alerts are dispatched within seconds.',
                 },
               },
               {
@@ -107,7 +107,7 @@ export default function LandingPage() {
                 name: 'Is there a free tier?',
                 acceptedAnswer: {
                   '@type': 'Answer',
-                  text: 'Yes. 30 monitors with 60-second checks, forever. No credit card required.',
+                  text: 'Yes. 30 monitors with 2-minute checks, forever. No credit card required.',
                 },
               },
               {
@@ -151,7 +151,7 @@ export default function LandingPage() {
             <p className="text-muted-foreground mt-6 text-lg md:text-xl">
               Heartbeat monitoring for cron jobs, background tasks, and
               scheduled scripts. If your job doesn&apos;t check in on time, you
-              know in under 60 seconds.
+              know in under 2 minutes.
             </p>
             <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start">
               <Link href="/login">
@@ -268,7 +268,7 @@ export default function LandingPage() {
               {
                 icon: Zap,
                 title: 'Instant alerts',
-                desc: 'Slack, Discord, email, and webhooks. Know within 60 seconds.',
+                desc: 'Slack, Discord, email, and webhooks. Know within minutes.',
               },
               {
                 icon: LayoutDashboard,
@@ -278,7 +278,7 @@ export default function LandingPage() {
               {
                 icon: Activity,
                 title: 'Generous free tier',
-                desc: '30 monitors, 60-second checks. No credit card required.',
+                desc: '30 monitors, 2-minute checks. No credit card required.',
               },
               {
                 icon: Globe,
@@ -343,13 +343,13 @@ export default function LandingPage() {
                     PulseMon
                   </th>
                   <th className="text-muted-foreground px-4 py-3 text-center font-medium">
+                    UptimeRobot
+                  </th>
+                  <th className="text-muted-foreground px-4 py-3 text-center font-medium">
                     Cronitor
                   </th>
                   <th className="text-muted-foreground px-4 py-3 text-center font-medium">
                     Healthchecks.io
-                  </th>
-                  <th className="text-muted-foreground px-4 py-3 text-center font-medium">
-                    BetterStack
                   </th>
                 </tr>
               </thead>
@@ -358,37 +358,37 @@ export default function LandingPage() {
                   {
                     feature: 'Free monitors',
                     pulsemon: '30',
+                    uptimerobot: '50',
                     cronitor: '5',
                     healthchecks: '20',
-                    betterstack: '10',
+                  },
+                  {
+                    feature: 'Check interval (free)',
+                    pulsemon: '2 min',
+                    uptimerobot: '5 min',
+                    cronitor: '5 min',
+                    healthchecks: '5 min',
                   },
                   {
                     feature: 'Starting price',
-                    pulsemon: '$9/mo',
-                    cronitor: '~$7/mo+',
+                    pulsemon: '$9/mo (unlimited)',
+                    uptimerobot: '$8/mo (10 monitors)',
+                    cronitor: '$2/mo (per monitor)',
                     healthchecks: '$20/mo',
-                    betterstack: '$29/mo',
-                  },
-                  {
-                    feature: 'Ping history (free)',
-                    pulsemon: '7 days',
-                    cronitor: 'Limited',
-                    healthchecks: '100 entries',
-                    betterstack: 'Limited',
                   },
                   {
                     feature: 'Status pages',
                     pulsemon: 'Included',
+                    uptimerobot: 'Basic only',
                     cronitor: '$25/mo extra',
                     healthchecks: 'No',
-                    betterstack: '1 included',
                   },
                   {
                     feature: 'Setup time',
                     pulsemon: '< 2 min',
+                    uptimerobot: '~5 min',
                     cronitor: '~5 min',
                     healthchecks: '~3 min',
-                    betterstack: '~5 min',
                   },
                 ].map((row) => (
                   <tr key={row.feature}>
@@ -397,13 +397,13 @@ export default function LandingPage() {
                       {row.pulsemon}
                     </td>
                     <td className="text-muted-foreground px-4 py-3 text-center">
+                      {row.uptimerobot}
+                    </td>
+                    <td className="text-muted-foreground px-4 py-3 text-center">
                       {row.cronitor}
                     </td>
                     <td className="text-muted-foreground px-4 py-3 text-center">
                       {row.healthchecks}
-                    </td>
-                    <td className="text-muted-foreground px-4 py-3 text-center">
-                      {row.betterstack}
                     </td>
                   </tr>
                 ))}
@@ -440,7 +440,7 @@ export default function LandingPage() {
               <CardContent className="space-y-3">
                 {[
                   '30 monitors',
-                  '60-second checks',
+                  '2-minute checks',
                   '7 days ping history',
                   'Email + 1 integration',
                   'API access',
@@ -476,7 +476,7 @@ export default function LandingPage() {
               <CardContent className="space-y-3">
                 {[
                   '100 monitors',
-                  '30-second checks',
+                  '60-second checks',
                   '30 days ping history',
                   'All integrations',
                   'Email support',
@@ -550,16 +550,15 @@ export default function LandingPage() {
             <AccordionItem value="alert-speed">
               <AccordionTrigger>How fast are alerts?</AccordionTrigger>
               <AccordionContent>
-                We check your monitors every 60 seconds (30s on Starter, 10s on
-                Pro). Once a missed ping is detected, alerts are dispatched
-                within seconds. From miss to inbox: under 2 minutes on the free
-                plan.
+                We check your monitors every 2 minutes on Free (60s on Starter,
+                10s on Pro). Once a missed ping is detected, alerts are
+                dispatched within seconds.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="free-tier">
               <AccordionTrigger>Is there a free tier?</AccordionTrigger>
               <AccordionContent>
-                Yes. 30 monitors with 60-second checks, forever. No credit card
+                Yes. 30 monitors with 2-minute checks, forever. No credit card
                 required.
               </AccordionContent>
             </AccordionItem>

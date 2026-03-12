@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 
 const comparisonRows = [
   { feature: 'Monitors', free: '30', starter: '100', pro: 'Unlimited' },
-  { feature: 'Check interval', free: '60s', starter: '30s', pro: '10s' },
+  { feature: 'Check interval', free: '120s', starter: '60s', pro: '10s' },
   {
     feature: 'Ping history',
     free: '7 days',
@@ -39,7 +39,7 @@ const faqs = [
     id: 'free-plan',
     question: 'Is the free plan really free?',
     answer:
-      'Yes! The free plan includes 30 monitors with 60-second checks. No credit card required, no time limit. Use it forever.',
+      'Yes! The free plan includes 30 monitors with 2-minute checks. No credit card required, no time limit. Use it forever.',
   },
   {
     id: 'upgrade',

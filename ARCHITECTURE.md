@@ -33,11 +33,11 @@ QStash (daily 3am UTC) → /api/webhooks/cleanup → Delete pings beyond plan re
 
 ---
 
-## Database Schema (10 tables)
+## Database Schema (12 tables)
 
 | Table                    | Purpose                                                                          |
 | ------------------------ | -------------------------------------------------------------------------------- |
-| **users**                | Accounts with plan (free/starter/pro), Stripe IDs                                |
+| **users**                | Accounts with plan (free/starter/pro/lifetime), Stripe IDs                       |
 | **accounts**             | Auth.js OAuth provider links                                                     |
 | **sessions**             | Auth.js session tokens                                                           |
 | **verificationTokens**   | Auth.js magic link tokens                                                        |
@@ -47,6 +47,8 @@ QStash (daily 3am UTC) → /api/webhooks/cleanup → Delete pings beyond plan re
 | **alertChannels**        | Alert destinations (email/slack/discord/webhook config as JSONB)                 |
 | **monitorAlertChannels** | Many-to-many join: which channels are linked to which monitors                   |
 | **apiKeys**              | User API keys for programmatic access (stored as SHA256 hash)                    |
+| **statusPages**          | Public status pages (slug, title, description, customDomain, branding options)   |
+| **statusPageMonitors**   | Many-to-many join: which monitors appear on which status pages (+ displayName, sortOrder) |
 
 ---
 
@@ -109,7 +111,7 @@ For each active (non-paused, non-new) monitor:
 | Feature                | Free            | Starter ($9/mo)       | Pro ($19/mo)        |
 | ---------------------- | --------------- | --------------------- | ------------------- |
 | Monitors               | 30              | 100                   | Unlimited           |
-| Min check interval     | 60s             | 30s                   | 10s                 |
+| Min check interval     | 120s            | 60s                   | 10s                 |
 | Ping history retention | 7 days          | 30 days               | 90 days             |
 | Team members           | 1               | 3                     | 10                  |
 | Alert channels         | 2               | 5                     | Unlimited           |
@@ -138,7 +140,7 @@ Webhook handler at `/api/webhooks/stripe` processes:
 
 - **Auth.js v5** with Drizzle adapter
 - **Providers:** GitHub OAuth, Google OAuth, Resend magic link (all conditional on env vars)
-- **Middleware:** protects `/dashboard/*` (redirects to `/login`), redirects authenticated users from `/` to `/dashboard`
+- **Middleware:** protects `/dashboard/*` (redirects to `/login`), redirects authenticated users from `/`, `/login`, and `/docs` to `/dashboard`
 - **API key auth:** V1 API routes use Bearer token (SHA256 hash lookup)
 
 ---
@@ -160,6 +162,11 @@ Webhook handler at `/api/webhooks/stripe` processes:
 | GET                   | /api/monitors/[id]/status    | Get monitor status                            |
 | GET/POST/PATCH/DELETE | /api/alert-channels[/id]     | CRUD alert channels                           |
 | GET/POST/DELETE       | /api/api-keys                | Manage API keys                               |
+| GET/POST              | /api/status-pages            | List + create status pages                    |
+| GET/PATCH/DELETE      | /api/status-pages/[id]       | Single status page CRUD                       |
+| GET                   | /api/status-pages/[id]/monitors | Linked monitors for a status page          |
+| POST                  | /api/checkout                | Create Stripe checkout session                |
+| GET                   | /api/customer-portal         | Redirect to Stripe customer portal            |
 
 ### Webhook endpoints (QStash-authenticated)
 
@@ -168,6 +175,14 @@ Webhook handler at `/api/webhooks/stripe` processes:
 | POST   | /api/webhooks/qstash  | Monitor checker — runs every 60s                         |
 | POST   | /api/webhooks/stripe  | Stripe subscription events                               |
 | POST   | /api/webhooks/cleanup | Daily ping cleanup — deletes pings beyond plan retention |
+
+### Public endpoints
+
+| Method | Route                        | Purpose                                  |
+| ------ | ---------------------------- | ---------------------------------------- |
+| GET    | /api/public/status/[slug]    | Public status page data (no auth needed) |
+| GET    | /api/lifetime-count          | Cached lifetime plan count               |
+| POST   | /api/cron/health             | Cron health check endpoint               |
 
 ### API key-authenticated (V1 programmatic)
 
@@ -196,15 +211,23 @@ Webhook handler at `/api/webhooks/stripe` processes:
 | `/dashboard/monitors/[id]/incidents` | Full paginated incident history (25/page, server-rendered)                                                                                                                                    |
 | `/dashboard/alerts`                  | Alert channel management                                                                                                                                                                      |
 | `/dashboard/settings`                | Profile, plan badge, API keys, delete account                                                                                                                                                 |
+| `/dashboard/status-pages`            | List user's status pages                                                                                                                                                                      |
+| `/dashboard/status-pages/new`        | Create status page form                                                                                                                                                                       |
+| `/dashboard/status-pages/[id]`       | Edit status page settings + link monitors                                                                                                                                                     |
+| `/dashboard/docs`                    | In-dashboard documentation                                                                                                                                                                    |
 
 ### Marketing (public)
 
 | Route      | What it does                                                               |
 | ---------- | -------------------------------------------------------------------------- |
-| `/`        | Landing page: hero, features, competitor comparison, pricing, FAQ, JSON-LD |
-| `/pricing` | Plan cards, feature comparison table, FAQ                                  |
-| `/docs`    | Documentation/quick-start guide                                            |
-| `/login`   | Auth.js sign-in (GitHub, Google, magic link)                               |
+| `/`                    | Landing page: hero, features, competitor comparison, pricing, FAQ, JSON-LD |
+| `/pricing`             | Plan cards, feature comparison table, FAQ                                  |
+| `/docs`                | Documentation/quick-start guide                                            |
+| `/blog`                | Blog listing (MDX posts, sorted by date)                                   |
+| `/blog/[slug]`         | Blog post detail page                                                      |
+| `/status/[slug]`       | Public-facing status page (server-rendered)                                |
+| `/login`               | Auth.js sign-in (GitHub, Google, magic link)                               |
+| `/auth/verify-request` | Magic link verification page                                               |
 
 ---
 
@@ -221,6 +244,16 @@ Webhook handler at `/api/webhooks/stripe` processes:
 - **AlertChannelManager** — CRUD for email/slack/discord/webhook channels
 - **MonitorChannelLinker** — Toggle which channels are linked to a monitor
 - **PlanLimitDialog** — Modal with upgrade CTA when plan limits exceeded
+- **StatusPageSettings** — Edit status page title, slug, description, branding
+- **StatusPageMonitorLinker** — Link monitors to a status page with display name + sort order
+
+### Status Page (public)
+
+- **StatusPageView** — Client component rendering full public status page
+- **StatusPageHeader** — Title, description, logo
+- **StatusPageMonitorList** — Monitor status rows with uptime bars
+- **StatusPageIncidents** — Recent incident history
+- **MiniUptimeBar** — Compact uptime visualization per monitor
 
 ### Shared
 
@@ -233,13 +266,13 @@ Webhook handler at `/api/webhooks/stripe` processes:
 
 ## Testing
 
-**Framework:** Vitest (33 tests across 3 files)
+**Framework:** Vitest (36 tests across 3 files)
 
-| File                   | Tests | What                                                                |
-| ---------------------- | ----- | ------------------------------------------------------------------- |
-| checker.test.ts        | 17    | `isMonitorLate()` (9) + `shouldSendReminder()` (8) — pure functions |
-| ping-endpoint.test.ts  | 9     | Edge ping endpoint: cache hit/miss, 404, paused, params, resilience |
-| stripe-webhook.test.ts | 7     | Signature verification, plan updates, downgrades, unknown events    |
+| File                   | Tests | What                                                                              |
+| ---------------------- | ----- | --------------------------------------------------------------------------------- |
+| checker.test.ts        | 17    | `isMonitorLate()` (9) + `shouldSendReminder()` (8) — pure functions               |
+| ping-endpoint.test.ts  | 9     | Edge ping endpoint: cache hit/miss, 404, paused, params, resilience               |
+| stripe-webhook.test.ts | 10    | Signature verification, plan updates, downgrades, lifetime checkout + protection   |
 
 **Strategy:** Only high-stakes, silent-failure areas. Skip UI, CRUD, auth, landing page.
 
@@ -261,15 +294,34 @@ Webhook handler at `/api/webhooks/stripe` processes:
 
 ---
 
+## Blog System
+
+- **Content:** MDX files in `src/content/blog/` with gray-matter frontmatter (title, description, date, author, tag)
+- **Utilities:** `src/lib/blog.ts` — `getAllPosts()`, `getPostBySlug()`, auto-calculated read time (230 words/min)
+- **Routes:** `/blog` (listing, sorted by date) and `/blog/[slug]` (detail page)
+
+---
+
+## Public Status Pages
+
+Fully implemented per-user public status pages:
+
+- **Dashboard:** Create, edit, delete status pages; link monitors with custom display names and sort order
+- **Public view:** Server-rendered at `/status/[slug]` — shows monitor statuses, uptime bars, recent incidents
+- **Customization:** Title, description, slug, logo URL, brand color, toggle overall uptime + incident history visibility
+- **Custom domain:** Schema supports `customDomain` field (DNS-level enforcement not yet wired)
+- **API:** Public endpoint at `/api/public/status/[slug]` serves status data without auth
+
+---
+
 ## Features NOT Yet Implemented (Placeholder/Planned)
 
 These are listed in CLAUDE.md Phase 5 and are not built:
 
 - **Team/org support** — multi-user access to monitors (team members limit exists in plan but not enforced)
-- **PulseMon self-monitoring status page** — `/status` page exists as a basic health check (DB + Redis ping) but isn't meaningful: self-hosted status pages fail when the app fails, and it has no historical data or real monitoring. Post-launch: set up internal PulseMon monitors on PulseMon's own endpoints, then build a proper status page as a showcase of the public status pages feature
+- **PulseMon self-monitoring status page** — `/status` page exists as a basic health check (DB + Redis ping) but isn't meaningful: self-hosted status pages fail when the app fails, and it has no historical data or real monitoring. Post-launch: set up internal PulseMon monitors on PulseMon's own endpoints, then build a proper public status page as a showcase
 - ~~**One-click deploy integrations**~~ — deprioritised
 - ~~**SDK packages**~~ — deprioritised
-- **Public status pages** — per-user public status page showing monitor uptime
 
 ## Known Scaling Considerations
 

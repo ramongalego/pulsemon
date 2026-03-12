@@ -17,7 +17,7 @@ const PLANS = [
     yearly: 0,
     features: [
       '30 monitors',
-      '60s check intervals',
+      '2 min check intervals',
       '7 days ping history',
       '2 alert channels',
       'Email + 1 integration',
@@ -30,7 +30,7 @@ const PLANS = [
     yearly: 84,
     features: [
       '100 monitors',
-      '30s check intervals',
+      '60s check intervals',
       '30 days ping history',
       '5 alert channels',
       'All integrations',

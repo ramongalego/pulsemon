@@ -26,7 +26,7 @@ export function defaultGracePeriod(intervalSeconds: number): number {
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
   free: {
     monitors: 30,
-    checkInterval: 60,
+    checkInterval: 120,
     teamMembers: 1,
     alertChannels: 2,
     pingHistoryDays: 7,
@@ -37,7 +37,7 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
   },
   starter: {
     monitors: 100,
-    checkInterval: 30,
+    checkInterval: 60,
     teamMembers: 3,
     alertChannels: 5,
     pingHistoryDays: 30,
