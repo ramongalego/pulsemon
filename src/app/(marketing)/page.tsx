@@ -343,9 +343,6 @@ export default function LandingPage() {
                     PulseMon
                   </th>
                   <th className="text-muted-foreground px-4 py-3 text-center font-medium">
-                    UptimeRobot
-                  </th>
-                  <th className="text-muted-foreground px-4 py-3 text-center font-medium">
                     Cronitor
                   </th>
                   <th className="text-muted-foreground px-4 py-3 text-center font-medium">
@@ -358,35 +355,24 @@ export default function LandingPage() {
                   {
                     feature: 'Free monitors',
                     pulsemon: '30',
-                    uptimerobot: '50',
                     cronitor: '5',
                     healthchecks: '20',
                   },
                   {
-                    feature: 'Check interval (free)',
-                    pulsemon: '2 min',
-                    uptimerobot: '5 min',
-                    cronitor: 'User-defined',
-                    healthchecks: 'User-defined',
-                  },
-                  {
                     feature: 'Starting price',
                     pulsemon: '$9/mo (100 monitors)',
-                    uptimerobot: '$8/mo (10 monitors)',
                     cronitor: '$2/mo (per monitor)',
                     healthchecks: '$20/mo (100 monitors)',
                   },
                   {
                     feature: 'Status pages',
                     pulsemon: 'Included',
-                    uptimerobot: 'Basic only',
                     cronitor: '$25/mo extra',
                     healthchecks: 'No',
                   },
                   {
                     feature: 'Setup time',
                     pulsemon: '< 2 min',
-                    uptimerobot: '~5 min',
                     cronitor: '~5 min',
                     healthchecks: '~3 min',
                   },
@@ -395,9 +381,6 @@ export default function LandingPage() {
                     <td className="px-4 py-3 font-medium">{row.feature}</td>
                     <td className="text-primary px-4 py-3 text-center font-semibold">
                       {row.pulsemon}
-                    </td>
-                    <td className="text-muted-foreground px-4 py-3 text-center">
-                      {row.uptimerobot}
                     </td>
                     <td className="text-muted-foreground px-4 py-3 text-center">
                       {row.cronitor}

@@ -97,7 +97,11 @@ export async function POST(req: NextRequest) {
 
     // Check non-email type diversity (free plan: email + 1 other type)
     const existing = await db
-      .select({ id: alertChannels.id, type: alertChannels.type })
+      .select({
+        id: alertChannels.id,
+        type: alertChannels.type,
+        config: alertChannels.config,
+      })
       .from(alertChannels)
       .where(eq(alertChannels.userId, session.user.id));
 
@@ -121,6 +125,28 @@ export async function POST(req: NextRequest) {
           { status: 403 },
         );
       }
+    }
+
+    // Check for duplicate channel (same type + same config destination)
+    const newConfig = parsed.data.config as Record<string, unknown>;
+    const duplicate = existing.find((c) => {
+      if (c.type !== requestedType) return false;
+      const cfg = c.config as Record<string, unknown>;
+      if (requestedType === 'email') return cfg.email === newConfig.email;
+      return cfg.webhookUrl === newConfig.webhookUrl;
+    });
+
+    if (duplicate) {
+      return NextResponse.json(
+        {
+          data: null,
+          error: {
+            code: 'DUPLICATE',
+            message: 'This alert channel already exists.',
+          },
+        },
+        { status: 409 },
+      );
     }
 
     const [channel] = await db

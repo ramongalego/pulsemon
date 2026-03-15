@@ -244,6 +244,25 @@ export const statusPageMonitors = pgTable(
   (table) => [primaryKey({ columns: [table.statusPageId, table.monitorId] })],
 );
 
+// Feedback
+export const feedbackTypeEnum = pgEnum('feedback_type', [
+  'feedback',
+  'bug',
+  'support',
+]);
+
+export const feedback = pgTable('feedback', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  type: feedbackTypeEnum('type').notNull(),
+  message: text('message').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;

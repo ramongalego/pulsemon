@@ -1,5 +1,4 @@
 import { auth } from '@/lib/auth';
-import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { MobileNav } from './mobile-nav';
 import { UpgradeButton } from '@/components/dashboard/upgrade-button';
 import { getUserPlan } from '@/lib/plan-limits';
@@ -21,7 +20,6 @@ export async function DashboardHeader() {
             Upgrade
           </UpgradeButton>
         )}
-        <ThemeToggle />
       </div>
     </header>
   );

@@ -81,12 +81,8 @@
           "name": "accounts_user_id_users_id_fk",
           "tableFrom": "accounts",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -94,10 +90,7 @@
       "compositePrimaryKeys": {
         "accounts_provider_provider_account_id_pk": {
           "name": "accounts_provider_provider_account_id_pk",
-          "columns": [
-            "provider",
-            "provider_account_id"
-          ]
+          "columns": ["provider", "provider_account_id"]
         }
       },
       "uniqueConstraints": {},
@@ -156,12 +149,8 @@
           "name": "alert_channels_user_id_users_id_fk",
           "tableFrom": "alert_channels",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -243,12 +232,8 @@
           "name": "api_keys_user_id_users_id_fk",
           "tableFrom": "api_keys",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -326,12 +311,8 @@
           "name": "incidents_monitor_id_monitors_id_fk",
           "tableFrom": "incidents",
           "tableTo": "monitors",
-          "columnsFrom": [
-            "monitor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["monitor_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -365,12 +346,8 @@
           "name": "monitor_alert_channels_monitor_id_monitors_id_fk",
           "tableFrom": "monitor_alert_channels",
           "tableTo": "monitors",
-          "columnsFrom": [
-            "monitor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["monitor_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -378,12 +355,8 @@
           "name": "monitor_alert_channels_alert_channel_id_alert_channels_id_fk",
           "tableFrom": "monitor_alert_channels",
           "tableTo": "alert_channels",
-          "columnsFrom": [
-            "alert_channel_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["alert_channel_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -391,10 +364,7 @@
       "compositePrimaryKeys": {
         "monitor_alert_channels_monitor_id_alert_channel_id_pk": {
           "name": "monitor_alert_channels_monitor_id_alert_channel_id_pk",
-          "columns": [
-            "monitor_id",
-            "alert_channel_id"
-          ]
+          "columns": ["monitor_id", "alert_channel_id"]
         }
       },
       "uniqueConstraints": {},
@@ -515,12 +485,8 @@
           "name": "monitors_user_id_users_id_fk",
           "tableFrom": "monitors",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -530,9 +496,7 @@
         "monitors_slug_unique": {
           "name": "monitors_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -618,12 +582,8 @@
           "name": "pings_monitor_id_monitors_id_fk",
           "tableFrom": "pings",
           "tableTo": "monitors",
-          "columnsFrom": [
-            "monitor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["monitor_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -663,12 +623,8 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -715,12 +671,8 @@
           "name": "status_page_monitors_status_page_id_status_pages_id_fk",
           "tableFrom": "status_page_monitors",
           "tableTo": "status_pages",
-          "columnsFrom": [
-            "status_page_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["status_page_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -728,12 +680,8 @@
           "name": "status_page_monitors_monitor_id_monitors_id_fk",
           "tableFrom": "status_page_monitors",
           "tableTo": "monitors",
-          "columnsFrom": [
-            "monitor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["monitor_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -741,10 +689,7 @@
       "compositePrimaryKeys": {
         "status_page_monitors_status_page_id_monitor_id_pk": {
           "name": "status_page_monitors_status_page_id_monitor_id_pk",
-          "columns": [
-            "status_page_id",
-            "monitor_id"
-          ]
+          "columns": ["status_page_id", "monitor_id"]
         }
       },
       "uniqueConstraints": {},
@@ -863,12 +808,8 @@
           "name": "status_pages_user_id_users_id_fk",
           "tableFrom": "status_pages",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -878,16 +819,12 @@
         "status_pages_slug_unique": {
           "name": "status_pages_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         },
         "status_pages_custom_domain_unique": {
           "name": "status_pages_custom_domain_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "custom_domain"
-          ]
+          "columns": ["custom_domain"]
         }
       },
       "policies": {},
@@ -971,9 +908,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -1008,10 +943,7 @@
       "compositePrimaryKeys": {
         "verification_tokens_identifier_token_pk": {
           "name": "verification_tokens_identifier_token_pk",
-          "columns": [
-            "identifier",
-            "token"
-          ]
+          "columns": ["identifier", "token"]
         }
       },
       "uniqueConstraints": {},
@@ -1024,40 +956,22 @@
     "public.alert_channel_type": {
       "name": "alert_channel_type",
       "schema": "public",
-      "values": [
-        "email",
-        "slack",
-        "discord",
-        "webhook"
-      ]
+      "values": ["email", "slack", "discord", "webhook"]
     },
     "public.monitor_status": {
       "name": "monitor_status",
       "schema": "public",
-      "values": [
-        "up",
-        "down",
-        "paused",
-        "new"
-      ]
+      "values": ["up", "down", "paused", "new"]
     },
     "public.ping_status": {
       "name": "ping_status",
       "schema": "public",
-      "values": [
-        "success",
-        "fail"
-      ]
+      "values": ["success", "fail"]
     },
     "public.plan": {
       "name": "plan",
       "schema": "public",
-      "values": [
-        "free",
-        "starter",
-        "pro",
-        "lifetime"
-      ]
+      "values": ["free", "starter", "pro", "lifetime"]
     }
   },
   "schemas": {},

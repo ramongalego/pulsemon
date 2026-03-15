@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
     // Ping PulseMon self-monitor so we know cleanup is running
     const slug = 'cleanup-job';
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://pulsemon.dev';
-    await fetch(`${appUrl}/api/ping/${slug}`, { method: 'GET' }).catch(
-      (err) => console.error('Failed to ping cleanup monitor:', err),
+    await fetch(`${appUrl}/api/ping/${slug}`, { method: 'GET' }).catch((err) =>
+      console.error('Failed to ping cleanup monitor:', err),
     );
 
     return NextResponse.json({ ok: true, ...result });

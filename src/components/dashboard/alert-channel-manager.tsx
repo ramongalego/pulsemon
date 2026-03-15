@@ -28,7 +28,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Mail, MessageSquare, Plus, Trash2, Webhook } from 'lucide-react';
+import { Bell, Mail, Plus, Trash2, Webhook } from 'lucide-react';
+import { SlackIcon } from '@/components/icons/slack';
+import { DiscordIcon } from '@/components/icons/discord';
 import { toast } from 'sonner';
 import type { AlertChannel } from '@/lib/db/schema';
 import type { Plan } from '@/types';
@@ -37,8 +39,8 @@ import { UpgradeModal } from '@/components/dashboard/upgrade-modal';
 
 const CHANNEL_ICONS = {
   email: Mail,
-  slack: MessageSquare,
-  discord: MessageSquare,
+  slack: SlackIcon,
+  discord: DiscordIcon,
   webhook: Webhook,
 };
 
@@ -250,10 +252,26 @@ export function AlertChannelManager({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="email">Email</SelectItem>
-                    <SelectItem value="slack">Slack</SelectItem>
-                    <SelectItem value="discord">Discord</SelectItem>
-                    <SelectItem value="webhook">Custom Webhook</SelectItem>
+                    <SelectItem value="email">
+                      <span className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" /> Email
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="slack">
+                      <span className="flex items-center gap-2">
+                        <SlackIcon className="h-4 w-4" /> Slack
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="discord">
+                      <span className="flex items-center gap-2">
+                        <DiscordIcon className="h-4 w-4" /> Discord
+                      </span>
+                    </SelectItem>
+                    <SelectItem value="webhook">
+                      <span className="flex items-center gap-2">
+                        <Webhook className="h-4 w-4" /> Custom Webhook
+                      </span>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>

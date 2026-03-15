@@ -10,18 +10,25 @@ export function UpgradeButton({
   currentPlan,
   variant = 'outline',
   size = 'sm',
+  className,
   children,
 }: {
   currentPlan: Plan;
   variant?: 'default' | 'outline' | 'secondary' | 'ghost';
   size?: 'default' | 'sm' | 'lg' | 'xs';
+  className?: string;
   children?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <Button variant={variant} size={size} onClick={() => setOpen(true)}>
+      <Button
+        variant={variant}
+        size={size}
+        className={className}
+        onClick={() => setOpen(true)}
+      >
         {children ?? 'Upgrade'}
       </Button>
       <UpgradeModal

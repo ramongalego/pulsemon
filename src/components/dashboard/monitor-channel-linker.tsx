@@ -3,14 +3,16 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
-import { Mail, MessageSquare, Webhook } from 'lucide-react';
+import { Mail, Webhook } from 'lucide-react';
+import { SlackIcon } from '@/components/icons/slack';
+import { DiscordIcon } from '@/components/icons/discord';
 import { toast } from 'sonner';
 import type { AlertChannel } from '@/lib/db/schema';
 
 const CHANNEL_ICONS = {
   email: Mail,
-  slack: MessageSquare,
-  discord: MessageSquare,
+  slack: SlackIcon,
+  discord: DiscordIcon,
   webhook: Webhook,
 };
 

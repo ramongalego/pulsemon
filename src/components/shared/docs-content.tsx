@@ -6,7 +6,9 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Mail, MessageSquare, Webhook } from 'lucide-react';
+import { Mail, Webhook } from 'lucide-react';
+import { SlackIcon } from '@/components/icons/slack';
+import { DiscordIcon } from '@/components/icons/discord';
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pulsemon.dev';
 
@@ -512,12 +514,12 @@ CMD ["crond", "-f", "-l", "2"]`}</code>
             },
             {
               name: 'Slack',
-              icon: MessageSquare,
+              icon: SlackIcon,
               desc: 'Add a Slack incoming webhook URL to receive alerts in any Slack channel.',
             },
             {
               name: 'Discord',
-              icon: MessageSquare,
+              icon: DiscordIcon,
               desc: 'Add a Discord webhook URL to receive alerts in any Discord channel.',
             },
             {
