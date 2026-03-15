@@ -59,7 +59,6 @@ export async function checkMonitors(): Promise<CheckResult[]> {
         .returning({ id: monitors.id });
 
       if (!updated) {
-        // Another checker run already handled this — skip
         results.push({
           monitorId: monitor.id,
           monitorName: monitor.name,
@@ -71,26 +70,64 @@ export async function checkMonitors(): Promise<CheckResult[]> {
         continue;
       }
 
-      const [incident] = await db
-        .insert(incidents)
-        .values({
+      // Check if a fail ping already created an incident (explicit_failure or overlap)
+      const [existingOpenIncident] = await db
+        .select()
+        .from(incidents)
+        .where(
+          and(
+            eq(incidents.monitorId, monitor.id),
+            isNull(incidents.resolvedAt),
+          ),
+        )
+        .limit(1);
+
+      if (existingOpenIncident) {
+        // Incident already exists (e.g. from explicit_failure). Use escalation logic instead.
+        const shouldEscalate = shouldSendReminder(
+          existingOpenIncident.startedAt,
+          existingOpenIncident.alertsSent,
+          now,
+        );
+
+        if (shouldEscalate) {
+          await dispatchAlerts(monitor, 'monitor.down', existingOpenIncident);
+          await db
+            .update(incidents)
+            .set({ alertsSent: existingOpenIncident.alertsSent + 1 })
+            .where(eq(incidents.id, existingOpenIncident.id));
+        }
+
+        results.push({
           monitorId: monitor.id,
-          startedAt: new Date(now),
-          cause: 'missed_ping',
-          alertsSent: 1,
-        })
-        .returning();
+          monitorName: monitor.name,
+          slug: monitor.slug,
+          previousStatus: monitor.status,
+          newStatus: 'down',
+          action: 'went_down',
+        });
+      } else {
+        const [incident] = await db
+          .insert(incidents)
+          .values({
+            monitorId: monitor.id,
+            startedAt: new Date(now),
+            cause: 'missed_ping',
+            alertsSent: 1,
+          })
+          .returning();
 
-      await dispatchAlerts(monitor, 'monitor.down', incident);
+        await dispatchAlerts(monitor, 'monitor.down', incident);
 
-      results.push({
-        monitorId: monitor.id,
-        monitorName: monitor.name,
-        slug: monitor.slug,
-        previousStatus: monitor.status,
-        newStatus: 'down',
-        action: 'went_down',
-      });
+        results.push({
+          monitorId: monitor.id,
+          monitorName: monitor.name,
+          slug: monitor.slug,
+          previousStatus: monitor.status,
+          newStatus: 'down',
+          action: 'went_down',
+        });
+      }
     } else if (isLate && monitor.status === 'down') {
       // Still down - check if we should send a reminder
       const openIncident = await db

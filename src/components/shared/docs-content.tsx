@@ -331,11 +331,16 @@ curl -fsS --retry 3 ${BASE_URL}/api/ping/your-slug`}</code>
             .
           </p>
           <p className="text-muted-foreground text-sm">
-            A fail ping is recorded in your ping history but does{' '}
-            <strong>not</strong> mark the monitor as &quot;up&quot;. It
-            won&apos;t reset the deadline or resolve an open incident. Use this
-            to tell apart &quot;the job ran but errored&quot; from &quot;the job
-            ran successfully.&quot;
+            A fail ping immediately marks the monitor as <strong>down</strong>,
+            creates an incident, and fires an alert. It does{' '}
+            <strong>not</strong> reset the deadline. The monitor recovers when
+            the next success ping arrives.
+          </p>
+          <p className="text-muted-foreground text-sm">
+            If you include a{' '}
+            <code className="bg-muted rounded px-1.5 py-0.5 text-xs">body</code>{' '}
+            with the fail ping, the error output will be included in the alert
+            so you can see what went wrong without checking the server.
           </p>
           <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-sm">
             <code>{`#!/bin/bash

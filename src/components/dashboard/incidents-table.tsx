@@ -77,7 +77,9 @@ export function IncidentsTable({
                   ? 'Duration Exceeded'
                   : incident.cause === 'overlap'
                     ? 'Overlap'
-                    : incident.cause}
+                    : incident.cause === 'explicit_failure'
+                      ? 'Reported Failure'
+                      : incident.cause}
             </span>
             <span className="text-muted-foreground ml-2">
               <RelativeTime date={incident.startedAt} />

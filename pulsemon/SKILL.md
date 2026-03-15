@@ -115,6 +115,7 @@ Pings are sent directly to the ping endpoint (no API key needed):
 `GET https://pulsemon.dev/api/ping/{slug}`
 
 Optional query params:
+
 - **status**: "success" (default), "fail", or "start"
 - **duration**: Job duration in milliseconds
 

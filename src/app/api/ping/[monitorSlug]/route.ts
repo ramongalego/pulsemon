@@ -65,7 +65,6 @@ async function handlePing(
       .limit(1);
 
     if (!dbMonitor) {
-      // Issue #4: Return 404 for unknown slugs
       return NextResponse.json(
         { ok: false, error: 'Monitor not found' },
         { status: 404 },
@@ -73,8 +72,6 @@ async function handlePing(
     }
 
     monitor = dbMonitor;
-
-    // Cache for 5 minutes
     await redis.set(cacheKey, monitor, { ex: 300 });
   }
 
@@ -84,7 +81,6 @@ async function handlePing(
 
   // From here on, monitor exists. Errors return 200 to not break cron jobs.
   try {
-    // Parse optional params (from query string or POST body)
     const url = new URL(req.url);
     let pingStatus: 'success' | 'fail' | 'start' = 'success';
     let duration: number | null = null;
@@ -109,8 +105,8 @@ async function handlePing(
       }
     }
 
-    // Start pings do NOT reset the deadline (only success pings do)
-    if (pingStatus !== 'start') {
+    // Only success pings reset the deadline. Start and fail pings do not.
+    if (pingStatus === 'success') {
       const ttl =
         monitor.expectedInterval + monitor.gracePeriod + REDIS_TTL_BUFFER;
       await redis.set(redisKeys.lastPing(monitor.id), now, { ex: ttl });
@@ -134,7 +130,6 @@ async function handlePing(
             .where(eq(monitors.id, monitor.id));
 
           if (monitorState?.isRunning) {
-            // Overlap detected: create incident and alert
             const [fullMonitor] = await db
               .select()
               .from(monitors)
@@ -167,7 +162,6 @@ async function handlePing(
             }
           }
 
-          // Set isRunning and lastStartAt (don't update status or lastPingAt)
           await db
             .update(monitors)
             .set({
@@ -176,35 +170,74 @@ async function handlePing(
               updatedAt: new Date(now),
             })
             .where(eq(monitors.id, monitor.id));
-        } else {
-          // Success or fail ping
-          const updateFields: Partial<typeof monitors.$inferInsert> = {
-            lastPingAt: new Date(now),
-            updatedAt: new Date(now),
-            isRunning: false,
-          };
-          if (pingStatus === 'success') {
-            updateFields.status = 'up';
-          }
-
+        } else if (pingStatus === 'fail') {
+          // Fail ping: mark monitor down, create incident if none open
           await db
             .update(monitors)
-            .set(updateFields)
+            .set({
+              lastPingAt: new Date(now),
+              status: 'down',
+              isRunning: false,
+              updatedAt: new Date(now),
+            })
             .where(eq(monitors.id, monitor.id));
-        }
 
-        // Insert ping record
-        await db.insert(pings).values({
-          monitorId: monitor.id,
-          receivedAt: new Date(now),
-          sourceIp,
-          duration,
-          status: pingStatus,
-          body,
-        });
+          // Check for open incidents to avoid duplicates
+          const openIncidents = await db
+            .select()
+            .from(incidents)
+            .where(
+              and(
+                eq(incidents.monitorId, monitor.id),
+                isNull(incidents.resolvedAt),
+              ),
+            );
 
-        // Resolve open incidents on success or fail pings
-        if (pingStatus === 'success' || pingStatus === 'fail') {
+          if (openIncidents.length === 0) {
+            const [fullMonitor] = await db
+              .select()
+              .from(monitors)
+              .where(eq(monitors.id, monitor.id))
+              .limit(1);
+
+            if (fullMonitor) {
+              const [incident] = await db
+                .insert(incidents)
+                .values({
+                  monitorId: monitor.id,
+                  startedAt: new Date(now),
+                  cause: 'explicit_failure',
+                  alertsSent: 1,
+                })
+                .returning();
+
+              try {
+                await dispatchAlerts(
+                  fullMonitor as Monitor,
+                  'monitor.down',
+                  incident,
+                );
+              } catch (alertErr) {
+                console.error(
+                  `Fail alert failed for monitor ${monitor.id}:`,
+                  alertErr,
+                );
+              }
+            }
+          }
+        } else {
+          // Success ping: mark up, clear isRunning
+          await db
+            .update(monitors)
+            .set({
+              lastPingAt: new Date(now),
+              status: 'up',
+              isRunning: false,
+              updatedAt: new Date(now),
+            })
+            .where(eq(monitors.id, monitor.id));
+
+          // Resolve all open incidents and send recovery alert
           const openIncidents = await db
             .select()
             .from(incidents)
@@ -216,38 +249,33 @@ async function handlePing(
             );
 
           if (openIncidents.length > 0) {
-            if (pingStatus === 'success') {
-              // Fetch full monitor for alert dispatch
-              const [fullMonitor] = await db
-                .select()
-                .from(monitors)
-                .where(eq(monitors.id, monitor.id))
-                .limit(1);
+            const [fullMonitor] = await db
+              .select()
+              .from(monitors)
+              .where(eq(monitors.id, monitor.id))
+              .limit(1);
 
-              if (fullMonitor) {
-                // Send one recovery alert for the most recent incident
-                const latest = openIncidents[openIncidents.length - 1];
-                const resolvedIncident: Incident = {
-                  ...latest,
-                  resolvedAt: new Date(now),
-                };
+            if (fullMonitor) {
+              const latest = openIncidents[openIncidents.length - 1];
+              const resolvedIncident: Incident = {
+                ...latest,
+                resolvedAt: new Date(now),
+              };
 
-                try {
-                  await dispatchAlerts(
-                    fullMonitor as Monitor,
-                    'monitor.up',
-                    resolvedIncident,
-                  );
-                } catch (alertErr) {
-                  console.error(
-                    `Recovery alert failed for incident ${latest.id}, leaving open for retry:`,
-                    alertErr,
-                  );
-                }
+              try {
+                await dispatchAlerts(
+                  fullMonitor as Monitor,
+                  'monitor.up',
+                  resolvedIncident,
+                );
+              } catch (alertErr) {
+                console.error(
+                  `Recovery alert failed for incident ${latest.id}, leaving open for retry:`,
+                  alertErr,
+                );
               }
             }
 
-            // Resolve all open incidents (both success and fail)
             for (const incident of openIncidents) {
               await db
                 .update(incidents)
@@ -256,6 +284,16 @@ async function handlePing(
             }
           }
         }
+
+        // Insert ping record
+        await db.insert(pings).values({
+          monitorId: monitor.id,
+          receivedAt: new Date(now),
+          sourceIp,
+          duration,
+          status: pingStatus,
+          body,
+        });
       } catch (err) {
         console.error('Background ping sync failed:', err);
       }
@@ -264,7 +302,6 @@ async function handlePing(
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('Ping endpoint error:', err);
-    // Monitor exists but something else failed. Return 200 so cron jobs don't break.
     return NextResponse.json({ ok: true });
   }
 }

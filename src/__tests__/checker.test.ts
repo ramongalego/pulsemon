@@ -6,6 +6,8 @@ import {
   truncateBody,
   isOverlap,
   nextRunningState,
+  shouldResetDeadline,
+  shouldCreateFailIncident,
 } from '@/lib/monitoring/utils';
 
 describe('isMonitorLate', () => {
@@ -214,5 +216,37 @@ describe('nextRunningState', () => {
 
   it('returns false for fail ping', () => {
     expect(nextRunningState('fail')).toBe(false);
+  });
+});
+
+describe('shouldResetDeadline', () => {
+  it('returns true for success ping', () => {
+    expect(shouldResetDeadline('success')).toBe(true);
+  });
+
+  it('returns false for fail ping', () => {
+    expect(shouldResetDeadline('fail')).toBe(false);
+  });
+
+  it('returns false for start ping', () => {
+    expect(shouldResetDeadline('start')).toBe(false);
+  });
+});
+
+describe('shouldCreateFailIncident', () => {
+  it('returns true for fail ping with no open incident', () => {
+    expect(shouldCreateFailIncident('fail', false)).toBe(true);
+  });
+
+  it('returns false for fail ping when incident already open', () => {
+    expect(shouldCreateFailIncident('fail', true)).toBe(false);
+  });
+
+  it('returns false for success ping', () => {
+    expect(shouldCreateFailIncident('success', false)).toBe(false);
+  });
+
+  it('returns false for start ping', () => {
+    expect(shouldCreateFailIncident('start', false)).toBe(false);
   });
 });

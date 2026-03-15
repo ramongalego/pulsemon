@@ -189,8 +189,9 @@ describe('Ping Endpoint', () => {
       });
 
       expect(res.status).toBe(200);
-      // Redis should still be updated (ping received regardless of status)
-      expect(mockRedisSet).toHaveBeenCalledWith(
+      // Fail pings do NOT reset the deadline (only success pings do).
+      // Redis set should only be called for the rate limit key.
+      expect(mockRedisSet).not.toHaveBeenCalledWith(
         'ping:mon-123:last',
         expect.any(Number),
         expect.any(Object),

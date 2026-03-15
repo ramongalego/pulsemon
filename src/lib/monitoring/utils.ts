@@ -32,6 +32,27 @@ export function isOverlap(
 }
 
 /**
+ * Determines if a ping should reset the monitor's deadline.
+ * Only success pings reset the deadline.
+ */
+export function shouldResetDeadline(
+  pingStatus: 'success' | 'fail' | 'start',
+): boolean {
+  return pingStatus === 'success';
+}
+
+/**
+ * Determines if a fail ping should create an incident.
+ * Only creates one if no incident is already open.
+ */
+export function shouldCreateFailIncident(
+  pingStatus: 'success' | 'fail' | 'start',
+  hasOpenIncident: boolean,
+): boolean {
+  return pingStatus === 'fail' && !hasOpenIncident;
+}
+
+/**
  * Determines the new isRunning state after a ping.
  * Start pings set it to true, success/fail pings set it to false.
  */
