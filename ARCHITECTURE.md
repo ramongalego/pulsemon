@@ -35,19 +35,19 @@ QStash (daily 3am UTC) → /api/webhooks/cleanup → Delete pings beyond plan re
 
 ## Database Schema (12 tables)
 
-| Table                    | Purpose                                                                          |
-| ------------------------ | -------------------------------------------------------------------------------- |
-| **users**                | Accounts with plan (free/starter/pro/lifetime), Stripe IDs                       |
-| **accounts**             | Auth.js OAuth provider links                                                     |
-| **sessions**             | Auth.js session tokens                                                           |
-| **verificationTokens**   | Auth.js magic link tokens                                                        |
-| **monitors**             | Heartbeat monitors (slug, expectedInterval, gracePeriod, status, isPaused, tags) |
-| **pings**                | Individual ping records (receivedAt, sourceIp, duration, status, body)           |
-| **incidents**            | Downtime events (startedAt, resolvedAt, cause, alertsSent counter)               |
-| **alertChannels**        | Alert destinations (email/slack/discord/webhook config as JSONB)                 |
-| **monitorAlertChannels** | Many-to-many join: which channels are linked to which monitors                   |
-| **apiKeys**              | User API keys for programmatic access (stored as SHA256 hash)                    |
-| **statusPages**          | Public status pages (slug, title, description, customDomain, branding options)   |
+| Table                    | Purpose                                                                                   |
+| ------------------------ | ----------------------------------------------------------------------------------------- |
+| **users**                | Accounts with plan (free/starter/pro/lifetime), Stripe IDs                                |
+| **accounts**             | Auth.js OAuth provider links                                                              |
+| **sessions**             | Auth.js session tokens                                                                    |
+| **verificationTokens**   | Auth.js magic link tokens                                                                 |
+| **monitors**             | Heartbeat monitors (slug, expectedInterval, gracePeriod, status, isPaused, tags)          |
+| **pings**                | Individual ping records (receivedAt, sourceIp, duration, status, body)                    |
+| **incidents**            | Downtime events (startedAt, resolvedAt, cause, alertsSent counter)                        |
+| **alertChannels**        | Alert destinations (email/slack/discord/webhook config as JSONB)                          |
+| **monitorAlertChannels** | Many-to-many join: which channels are linked to which monitors                            |
+| **apiKeys**              | User API keys for programmatic access (stored as SHA256 hash)                             |
+| **statusPages**          | Public status pages (slug, title, description, customDomain, branding options)            |
 | **statusPageMonitors**   | Many-to-many join: which monitors appear on which status pages (+ displayName, sortOrder) |
 
 ---
@@ -149,24 +149,24 @@ Webhook handler at `/api/webhooks/stripe` processes:
 
 ### Session-authenticated (dashboard)
 
-| Method                | Route                        | Purpose                                       |
-| --------------------- | ---------------------------- | --------------------------------------------- |
-| GET                   | /api/monitors                | List user's monitors                          |
-| POST                  | /api/monitors                | Create monitor (plan limits enforced)         |
-| PATCH                 | /api/monitors/[id]           | Update monitor                                |
-| DELETE                | /api/monitors/[id]           | Delete monitor + Redis cleanup                |
-| GET                   | /api/monitors/[id]/pings     | Paginated pings (10/page, retention filtered) |
-| GET                   | /api/monitors/[id]/incidents | Paginated incidents (10/page)                 |
-| GET                   | /api/monitors/[id]/channels  | Get linked alert channels                     |
-| PUT                   | /api/monitors/[id]/channels  | Update channel links                          |
-| GET                   | /api/monitors/[id]/status    | Get monitor status                            |
-| GET/POST/PATCH/DELETE | /api/alert-channels[/id]     | CRUD alert channels                           |
-| GET/POST/DELETE       | /api/api-keys                | Manage API keys                               |
-| GET/POST              | /api/status-pages            | List + create status pages                    |
-| GET/PATCH/DELETE      | /api/status-pages/[id]       | Single status page CRUD                       |
-| GET                   | /api/status-pages/[id]/monitors | Linked monitors for a status page          |
-| POST                  | /api/checkout                | Create Stripe checkout session                |
-| GET                   | /api/customer-portal         | Redirect to Stripe customer portal            |
+| Method                | Route                           | Purpose                                       |
+| --------------------- | ------------------------------- | --------------------------------------------- |
+| GET                   | /api/monitors                   | List user's monitors                          |
+| POST                  | /api/monitors                   | Create monitor (plan limits enforced)         |
+| PATCH                 | /api/monitors/[id]              | Update monitor                                |
+| DELETE                | /api/monitors/[id]              | Delete monitor + Redis cleanup                |
+| GET                   | /api/monitors/[id]/pings        | Paginated pings (10/page, retention filtered) |
+| GET                   | /api/monitors/[id]/incidents    | Paginated incidents (10/page)                 |
+| GET                   | /api/monitors/[id]/channels     | Get linked alert channels                     |
+| PUT                   | /api/monitors/[id]/channels     | Update channel links                          |
+| GET                   | /api/monitors/[id]/status       | Get monitor status                            |
+| GET/POST/PATCH/DELETE | /api/alert-channels[/id]        | CRUD alert channels                           |
+| GET/POST/DELETE       | /api/api-keys                   | Manage API keys                               |
+| GET/POST              | /api/status-pages               | List + create status pages                    |
+| GET/PATCH/DELETE      | /api/status-pages/[id]          | Single status page CRUD                       |
+| GET                   | /api/status-pages/[id]/monitors | Linked monitors for a status page             |
+| POST                  | /api/checkout                   | Create Stripe checkout session                |
+| GET                   | /api/customer-portal            | Redirect to Stripe customer portal            |
 
 ### Webhook endpoints (QStash-authenticated)
 
@@ -178,11 +178,11 @@ Webhook handler at `/api/webhooks/stripe` processes:
 
 ### Public endpoints
 
-| Method | Route                        | Purpose                                  |
-| ------ | ---------------------------- | ---------------------------------------- |
-| GET    | /api/public/status/[slug]    | Public status page data (no auth needed) |
-| GET    | /api/lifetime-count          | Cached lifetime plan count               |
-| POST   | /api/cron/health             | Cron health check endpoint               |
+| Method | Route                     | Purpose                                  |
+| ------ | ------------------------- | ---------------------------------------- |
+| GET    | /api/public/status/[slug] | Public status page data (no auth needed) |
+| GET    | /api/lifetime-count       | Cached lifetime plan count               |
+| POST   | /api/cron/health          | Cron health check endpoint               |
 
 ### API key-authenticated (V1 programmatic)
 
@@ -218,8 +218,8 @@ Webhook handler at `/api/webhooks/stripe` processes:
 
 ### Marketing (public)
 
-| Route      | What it does                                                               |
-| ---------- | -------------------------------------------------------------------------- |
+| Route                  | What it does                                                               |
+| ---------------------- | -------------------------------------------------------------------------- |
 | `/`                    | Landing page: hero, features, competitor comparison, pricing, FAQ, JSON-LD |
 | `/pricing`             | Plan cards, feature comparison table, FAQ                                  |
 | `/docs`                | Documentation/quick-start guide                                            |
@@ -268,11 +268,11 @@ Webhook handler at `/api/webhooks/stripe` processes:
 
 **Framework:** Vitest (36 tests across 3 files)
 
-| File                   | Tests | What                                                                              |
-| ---------------------- | ----- | --------------------------------------------------------------------------------- |
-| checker.test.ts        | 17    | `isMonitorLate()` (9) + `shouldSendReminder()` (8) — pure functions               |
-| ping-endpoint.test.ts  | 9     | Edge ping endpoint: cache hit/miss, 404, paused, params, resilience               |
-| stripe-webhook.test.ts | 10    | Signature verification, plan updates, downgrades, lifetime checkout + protection   |
+| File                   | Tests | What                                                                             |
+| ---------------------- | ----- | -------------------------------------------------------------------------------- |
+| checker.test.ts        | 17    | `isMonitorLate()` (9) + `shouldSendReminder()` (8) — pure functions              |
+| ping-endpoint.test.ts  | 9     | Edge ping endpoint: cache hit/miss, 404, paused, params, resilience              |
+| stripe-webhook.test.ts | 10    | Signature verification, plan updates, downgrades, lifetime checkout + protection |
 
 **Strategy:** Only high-stakes, silent-failure areas. Skip UI, CRUD, auth, landing page.
 

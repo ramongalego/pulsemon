@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import {
@@ -44,6 +44,8 @@ export default function NewMonitorPage() {
   const [graceManuallySet, setGraceManuallySet] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [planLimitMessage, setPlanLimitMessage] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [maxDuration, setMaxDuration] = useState('');
 
   const slug = slugify(name);
   const isCustom = interval === 'custom';
@@ -70,15 +72,21 @@ export default function NewMonitorPage() {
     setIsSubmitting(true);
 
     try {
+      const payload: Record<string, unknown> = {
+        name,
+        slug,
+        expectedInterval: effectiveInterval,
+        gracePeriod: Number(gracePeriod),
+      };
+
+      if (maxDuration && Number(maxDuration) > 0) {
+        payload.maxDuration = Number(maxDuration) * 1000; // seconds to ms
+      }
+
       const res = await fetch('/api/monitors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name,
-          slug,
-          expectedInterval: effectiveInterval,
-          gracePeriod: Number(gracePeriod),
-        }),
+        body: JSON.stringify(payload),
       });
 
       const json = await res.json();
@@ -198,6 +206,38 @@ export default function NewMonitorPage() {
                 Buffer before alerting on a missed ping. Auto-filled based on
                 your interval.
               </p>
+            </div>
+
+            <div>
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm font-medium transition-colors"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+              >
+                {showAdvanced ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+                Advanced settings
+              </button>
+              {showAdvanced && (
+                <div className="mt-4 space-y-2">
+                  <Label htmlFor="maxDuration">Max duration (seconds)</Label>
+                  <Input
+                    id="maxDuration"
+                    type="number"
+                    min="1"
+                    value={maxDuration}
+                    placeholder="e.g. 300 for 5 minutes"
+                    onChange={(e) => setMaxDuration(e.target.value)}
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    Alert if a run takes longer than this. Leave empty to
+                    disable.
+                  </p>
+                </div>
+              )}
             </div>
 
             <Button

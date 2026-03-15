@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { name, slug, expectedInterval, tags } = parsed.data;
+    const { name, slug, expectedInterval, tags, maxDuration } = parsed.data;
     const gracePeriod =
       parsed.data.gracePeriod ?? defaultGracePeriod(expectedInterval);
 
@@ -125,6 +125,7 @@ export async function POST(req: NextRequest) {
         expectedInterval,
         gracePeriod,
         tags,
+        maxDuration: maxDuration ?? null,
       })
       .returning();
 

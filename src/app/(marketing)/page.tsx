@@ -17,11 +17,11 @@ import {
   Activity,
   ArrowRight,
   Code2,
+  FileText,
   Globe,
   LayoutDashboard,
   Lock,
-  Shield,
-  Wifi,
+  Timer,
   Zap,
   Check,
 } from 'lucide-react';
@@ -286,9 +286,9 @@ export default function LandingPage() {
                 desc: 'Share a branded status page with your users. Shows uptime, incidents, and current status.',
               },
               {
-                icon: Wifi,
-                title: 'Global edge network',
-                desc: 'Ping endpoint runs on the edge. Fast from anywhere.',
+                icon: FileText,
+                title: 'Alerts include job output',
+                desc: "Send your job's stdout or stderr with the ping. When it fails, the alert shows you why. No SSH required.",
               },
               {
                 icon: Code2,
@@ -296,9 +296,9 @@ export default function LandingPage() {
                 desc: 'Full REST API. Manage everything programmatically.',
               },
               {
-                icon: Shield,
-                title: 'Incident timeline',
-                desc: 'Full history of every downtime event and resolution.',
+                icon: Timer,
+                title: 'Duration thresholds',
+                desc: 'Set a max run time. Get alerted when a job finishes but took way too long.',
               },
               {
                 icon: Lock,
@@ -306,7 +306,7 @@ export default function LandingPage() {
                 desc: 'Every outbound webhook is HMAC-signed. Verify it came from PulseMon.',
               },
             ].map((feature) => (
-              <Card key={feature.title} className="border-0 shadow-none">
+              <Card key={feature.title} className="shadow-none">
                 <CardHeader className="pb-2">
                   <feature.icon className="text-primary mb-2 h-8 w-8" />
                   <CardTitle className="text-base">{feature.title}</CardTitle>

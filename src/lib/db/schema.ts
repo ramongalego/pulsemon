@@ -103,6 +103,7 @@ export const monitors = pgTable(
     lastAlertAt: timestamp('last_alert_at', { withTimezone: true }),
     isPaused: boolean('is_paused').default(false).notNull(),
     tags: text('tags').array().default([]).notNull(),
+    maxDuration: integer('max_duration_ms'),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),

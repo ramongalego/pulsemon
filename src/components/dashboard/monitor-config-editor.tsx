@@ -20,7 +20,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Loader2, Trash2 } from 'lucide-react';
+import { Loader2, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import type { Monitor } from '@/lib/db/schema';
 import { PlanLimitDialog } from '@/components/dashboard/plan-limit-dialog';
@@ -40,6 +40,12 @@ export function MonitorConfigEditor({ monitor }: { monitor: Monitor }) {
   const [interval, setInterval] = useState(String(monitor.expectedInterval));
   const [gracePeriod, setGracePeriod] = useState(String(monitor.gracePeriod));
   const [tags, setTags] = useState(monitor.tags.join(', '));
+  const [maxDuration, setMaxDuration] = useState(
+    monitor.maxDuration ? String(monitor.maxDuration / 1000) : '',
+  );
+  const [showAdvanced, setShowAdvanced] = useState(
+    monitor.maxDuration !== null,
+  );
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [planLimitMessage, setPlanLimitMessage] = useState<string | null>(null);
@@ -66,6 +72,10 @@ export function MonitorConfigEditor({ monitor }: { monitor: Monitor }) {
         .filter(Boolean);
       if (JSON.stringify(newTags) !== JSON.stringify(monitor.tags))
         body.tags = newTags;
+
+      const newMaxDuration = maxDuration ? Number(maxDuration) * 1000 : null;
+      if (newMaxDuration !== (monitor.maxDuration ?? null))
+        body.maxDuration = newMaxDuration;
 
       if (Object.keys(body).length === 0) {
         setSaving(false);
@@ -196,6 +206,45 @@ export function MonitorConfigEditor({ monitor }: { monitor: Monitor }) {
             onChange={(e) => setTags(e.target.value)}
           />
         </div>
+      </div>
+      <div>
+        <button
+          type="button"
+          className="text-muted-foreground hover:text-foreground flex items-center gap-1 text-sm font-medium transition-colors"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+        >
+          {showAdvanced ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronRight className="h-4 w-4" />
+          )}
+          Advanced settings
+        </button>
+        {showAdvanced && (
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="config-max-duration">
+                Max duration (seconds)
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="config-max-duration"
+                  type="number"
+                  min={1}
+                  value={maxDuration}
+                  placeholder="e.g. 300 for 5 minutes"
+                  onChange={(e) => setMaxDuration(e.target.value)}
+                />
+                <span className="text-muted-foreground flex items-center text-sm">
+                  seconds
+                </span>
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Alert if a run takes longer than this. Leave empty to disable.
+              </p>
+            </div>
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-3">
         <Button onClick={handleSave} disabled={saving} size="sm">

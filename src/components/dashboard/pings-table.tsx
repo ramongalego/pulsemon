@@ -1,13 +1,126 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { RelativeTime } from '@/components/shared/relative-time';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { Ping } from '@/lib/db/schema';
 
 const PAGE_SIZE = 10;
 const MAX_INLINE = 50;
+
+function isValidJson(str: string): boolean {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function PingBody({ body }: { body: string }) {
+  const formatted = useMemo(() => {
+    if (isValidJson(body)) {
+      try {
+        return JSON.stringify(JSON.parse(body), null, 2);
+      } catch {
+        return body;
+      }
+    }
+    return body;
+  }, [body]);
+
+  const isJson = isValidJson(body);
+
+  return (
+    <div className="bg-muted overflow-x-auto rounded-md border p-3">
+      <pre className="font-mono text-xs leading-relaxed break-all whitespace-pre-wrap">
+        {isJson ? <JsonHighlighted text={formatted} /> : formatted}
+      </pre>
+    </div>
+  );
+}
+
+function JsonHighlighted({ text }: { text: string }) {
+  // Simple JSON syntax highlighting via regex
+  const parts = text.split(/("(?:[^"\\]|\\.)*")\s*:/g);
+
+  return (
+    <>
+      {parts.map((part, i) => {
+        // Odd indices are captured JSON keys
+        if (i % 2 === 1) {
+          return (
+            <span key={i}>
+              <span className="text-blue-600 dark:text-blue-400">{part}</span>:
+            </span>
+          );
+        }
+        // Highlight string values, numbers, booleans, null in the rest
+        const highlighted = part.replace(
+          /("(?:[^"\\]|\\.)*")|(\b(?:true|false|null)\b)|(\b-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)/g,
+          (match, str, bool, num) => {
+            if (str)
+              return `<span class="text-green-600 dark:text-green-400">${str}</span>`;
+            if (bool)
+              return `<span class="text-purple-600 dark:text-purple-400">${bool}</span>`;
+            if (num)
+              return `<span class="text-orange-600 dark:text-orange-400">${num}</span>`;
+            return match;
+          },
+        );
+        return (
+          <span key={i} dangerouslySetInnerHTML={{ __html: highlighted }} />
+        );
+      })}
+    </>
+  );
+}
+
+function PingRow({ ping }: { ping: Ping }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasBody = ping.body !== null && ping.body !== '';
+
+  return (
+    <div className="rounded-lg border">
+      <div
+        className={`grid grid-cols-3 gap-4 px-2 py-2 text-sm sm:grid-cols-4 ${hasBody ? 'cursor-pointer select-none' : ''}`}
+        onClick={hasBody ? () => setExpanded(!expanded) : undefined}
+      >
+        <span className="flex items-center gap-1">
+          {hasBody &&
+            (expanded ? (
+              <ChevronDown className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
+            ) : (
+              <ChevronRight className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
+            ))}
+          <span
+            className={
+              ping.status === 'success' ? 'text-green-600' : 'text-red-600'
+            }
+          >
+            {ping.status === 'success' ? 'OK' : 'FAIL'}
+          </span>
+        </span>
+        <span>
+          <RelativeTime date={ping.receivedAt} />
+        </span>
+        <span className="text-muted-foreground">
+          {ping.duration ? `${ping.duration}ms` : '—'}
+        </span>
+        <span className="text-muted-foreground hidden truncate sm:block">
+          {ping.sourceIp || '—'}
+        </span>
+      </div>
+      {expanded && hasBody && (
+        <div className="border-t px-2 py-2">
+          <PingBody body={ping.body!} />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function PingsTable({
   initialPings,
@@ -71,27 +184,7 @@ export function PingsTable({
         <span className="hidden sm:block">Source IP</span>
       </div>
       {allPings.map((ping) => (
-        <div
-          key={ping.id}
-          className="grid grid-cols-3 gap-4 rounded-lg border px-2 py-2 text-sm sm:grid-cols-4"
-        >
-          <span
-            className={
-              ping.status === 'success' ? 'text-green-600' : 'text-red-600'
-            }
-          >
-            {ping.status === 'success' ? 'OK' : 'FAIL'}
-          </span>
-          <span>
-            <RelativeTime date={ping.receivedAt} />
-          </span>
-          <span className="text-muted-foreground">
-            {ping.duration ? `${ping.duration}ms` : '—'}
-          </span>
-          <span className="text-muted-foreground hidden truncate sm:block">
-            {ping.sourceIp || '—'}
-          </span>
-        </div>
+        <PingRow key={ping.id} ping={ping} />
       ))}
       {hasMore && (
         <div className="flex justify-center pt-2">

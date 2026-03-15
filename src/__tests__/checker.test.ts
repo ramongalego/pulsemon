@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { isMonitorLate, shouldSendReminder } from '@/lib/monitoring/utils';
+import {
+  isMonitorLate,
+  shouldSendReminder,
+  isDurationExceeded,
+  truncateBody,
+} from '@/lib/monitoring/utils';
 
 describe('isMonitorLate', () => {
   const INTERVAL = 300; // 5 min in seconds
@@ -120,5 +125,60 @@ describe('shouldSendReminder', () => {
     // 4 alerts sent, only 30h passed (need 48h for next)
     const now = start.getTime() + 30 * 3600 * 1000;
     expect(shouldSendReminder(start, 4, now)).toBe(false);
+  });
+});
+
+describe('isDurationExceeded', () => {
+  it('returns true when ping duration exceeds maxDuration', () => {
+    // 10 minutes actual vs 5 minutes max
+    expect(isDurationExceeded(600_000, 300_000)).toBe(true);
+  });
+
+  it('returns false when maxDuration is null', () => {
+    expect(isDurationExceeded(600_000, null)).toBe(false);
+  });
+
+  it('returns false when ping duration is null', () => {
+    expect(isDurationExceeded(null, 300_000)).toBe(false);
+  });
+
+  it('returns false when both are null', () => {
+    expect(isDurationExceeded(null, null)).toBe(false);
+  });
+
+  it('returns false when duration is within threshold', () => {
+    // 2 minutes actual vs 5 minutes max
+    expect(isDurationExceeded(120_000, 300_000)).toBe(false);
+  });
+
+  it('returns false when duration exactly equals maxDuration', () => {
+    expect(isDurationExceeded(300_000, 300_000)).toBe(false);
+  });
+
+  it('returns true when duration exceeds by 1ms', () => {
+    expect(isDurationExceeded(300_001, 300_000)).toBe(true);
+  });
+});
+
+describe('truncateBody', () => {
+  it('returns body unchanged when under limit', () => {
+    expect(truncateBody('hello', 2000)).toBe('hello');
+  });
+
+  it('returns body unchanged when exactly at limit', () => {
+    const body = 'x'.repeat(2000);
+    expect(truncateBody(body, 2000)).toBe(body);
+  });
+
+  it('truncates body over 2000 chars with note', () => {
+    const body = 'x'.repeat(2500);
+    const result = truncateBody(body, 2000);
+    expect(result.length).toBeLessThan(body.length);
+    expect(result).toContain('... (truncated)');
+    expect(result.startsWith('x'.repeat(2000))).toBe(true);
+  });
+
+  it('omits section when body is empty', () => {
+    expect(truncateBody('', 2000)).toBe('');
   });
 });

@@ -1,9 +1,9 @@
 import { db } from '@/lib/db';
-import { monitors, incidents } from '@/lib/db/schema';
+import { monitors, incidents, pings } from '@/lib/db/schema';
 import { redis, redisKeys } from '@/lib/redis';
-import { eq, and, ne, isNull } from 'drizzle-orm';
+import { eq, and, ne, isNull, desc } from 'drizzle-orm';
 import { dispatchAlerts } from './alerter';
-import { isMonitorLate, shouldSendReminder } from './utils';
+import { isMonitorLate, shouldSendReminder, isDurationExceeded } from './utils';
 
 export type CheckResult = {
   monitorId: string;
@@ -11,7 +11,13 @@ export type CheckResult = {
   slug: string;
   previousStatus: string;
   newStatus: 'up' | 'down';
-  action: 'none' | 'went_down' | 'recovered' | 'still_down';
+  action:
+    | 'none'
+    | 'went_down'
+    | 'recovered'
+    | 'still_down'
+    | 'slow'
+    | 'slow_recovered';
 };
 
 export async function checkMonitors(): Promise<CheckResult[]> {
@@ -177,6 +183,98 @@ export async function checkMonitors(): Promise<CheckResult[]> {
         newStatus: 'up',
         action: 'none',
       });
+    }
+  }
+
+  // Duration threshold checks
+  const monitorsWithMaxDuration = activeMonitors.filter(
+    (m) => m.maxDuration !== null,
+  );
+
+  for (const monitor of monitorsWithMaxDuration) {
+    const [latestPing] = await db
+      .select({ id: pings.id, duration: pings.duration, body: pings.body })
+      .from(pings)
+      .where(eq(pings.monitorId, monitor.id))
+      .orderBy(desc(pings.receivedAt))
+      .limit(1);
+
+    if (!latestPing || latestPing.duration === null) continue;
+
+    // Check for open duration_exceeded incident
+    const [openDurationIncident] = await db
+      .select()
+      .from(incidents)
+      .where(
+        and(
+          eq(incidents.monitorId, monitor.id),
+          eq(incidents.cause, 'duration_exceeded'),
+          isNull(incidents.resolvedAt),
+        ),
+      )
+      .limit(1);
+
+    if (isDurationExceeded(latestPing.duration, monitor.maxDuration)) {
+      if (!openDurationIncident) {
+        // Create incident and alert
+        const now = Date.now();
+        const [incident] = await db
+          .insert(incidents)
+          .values({
+            monitorId: monitor.id,
+            startedAt: new Date(now),
+            cause: 'duration_exceeded',
+            alertsSent: 1,
+          })
+          .returning();
+
+        await dispatchAlerts(monitor, 'monitor.slow', incident, {
+          lastPingDuration: latestPing.duration,
+        });
+
+        results.push({
+          monitorId: monitor.id,
+          monitorName: monitor.name,
+          slug: monitor.slug,
+          previousStatus: monitor.status,
+          newStatus: monitor.status as 'up' | 'down',
+          action: 'slow',
+        });
+      }
+      // If there's already an open incident, do nothing (avoid duplicate alerts)
+    } else {
+      // Duration is within threshold — resolve open incident if any
+      if (openDurationIncident) {
+        const now = Date.now();
+        const resolvedIncident = {
+          ...openDurationIncident,
+          resolvedAt: new Date(now),
+        };
+
+        try {
+          await dispatchAlerts(monitor, 'monitor.up', resolvedIncident, {
+            lastPingDuration: latestPing.duration,
+          });
+          await db
+            .update(incidents)
+            .set({ resolvedAt: new Date(now) })
+            .where(eq(incidents.id, openDurationIncident.id));
+        } catch (err) {
+          console.error(
+            `Duration recovery alert failed for incident ${openDurationIncident.id}:`,
+            err,
+          );
+        }
+
+        results.push({
+          monitorId: monitor.id,
+          monitorName: monitor.name,
+          slug: monitor.slug,
+          previousStatus: monitor.status,
+          newStatus: monitor.status as 'up' | 'down',
+          action: 'slow_recovered',
+        });
+      }
     }
   }
 

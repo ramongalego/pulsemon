@@ -1,6 +1,26 @@
 import { ALERT_ESCALATION_INTERVALS } from './constants';
 
 /**
+ * Determines if a ping duration exceeds the max duration threshold.
+ * Returns false if either value is null (no threshold or no duration reported).
+ */
+export function isDurationExceeded(
+  pingDuration: number | null,
+  maxDuration: number | null,
+): boolean {
+  if (maxDuration === null || pingDuration === null) return false;
+  return pingDuration > maxDuration;
+}
+
+/**
+ * Truncates a string to a max length, appending a note if truncated.
+ */
+export function truncateBody(body: string, maxLength: number): string {
+  if (body.length <= maxLength) return body;
+  return body.slice(0, maxLength) + '\n... (truncated)';
+}
+
+/**
  * Determines if a monitor is late based on last ping time,
  * expected interval, and grace period.
  */

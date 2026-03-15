@@ -48,7 +48,7 @@ export type AlertChannelConfig =
 
 // Alert event payload (for webhooks)
 export type AlertEvent = {
-  event: 'monitor.down' | 'monitor.up';
+  event: 'monitor.down' | 'monitor.up' | 'monitor.slow';
   monitor: {
     id: string;
     name: string;
@@ -57,6 +57,9 @@ export type AlertEvent = {
     lastPingAt: string | null;
     expectedInterval: number;
     downSince?: string;
+    lastPingBody?: string | null;
+    maxDuration?: number;
+    lastPingDuration?: number;
   };
   incident: {
     id: string;

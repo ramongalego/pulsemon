@@ -2,12 +2,14 @@ import { db } from '@/lib/db';
 import {
   alertChannels,
   monitorAlertChannels,
+  pings,
   monitors as monitorsTable,
 } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 import { resend } from '@/lib/resend';
 import type { Monitor, Incident, AlertChannel } from '@/lib/db/schema';
 import type { AlertEvent } from '@/types';
+import { truncateBody } from './utils';
 
 function formatDuration(ms: number): string {
   const seconds = Math.floor(ms / 1000);
@@ -20,10 +22,29 @@ function formatDuration(ms: number): string {
   return `${days}d ${hours % 24}h`;
 }
 
+function formatDurationMs(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  return formatDuration(ms);
+}
+
+function formatTimestamp(iso: string): string {
+  const date = new Date(iso);
+  return date.toLocaleString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'UTC',
+    timeZoneName: 'short',
+  });
+}
+
 function buildAlertPayload(
   monitor: Monitor,
-  event: 'monitor.down' | 'monitor.up',
+  event: 'monitor.down' | 'monitor.up' | 'monitor.slow',
   incident: Incident,
+  lastPingBody: string | null,
 ): AlertEvent {
   const now = new Date();
   return {
@@ -32,11 +53,14 @@ function buildAlertPayload(
       id: monitor.id,
       name: monitor.name,
       slug: monitor.slug,
-      status: event === 'monitor.down' ? 'down' : 'up',
+      status:
+        event === 'monitor.down' || event === 'monitor.slow' ? 'down' : 'up',
       lastPingAt: monitor.lastPingAt?.toISOString() ?? null,
       expectedInterval: monitor.expectedInterval,
       downSince:
         event === 'monitor.down' ? incident.startedAt.toISOString() : undefined,
+      lastPingBody: lastPingBody ?? undefined,
+      maxDuration: monitor.maxDuration ?? undefined,
     },
     incident: {
       id: incident.id,
@@ -54,8 +78,9 @@ function buildAlertPayload(
 
 export async function dispatchAlerts(
   monitor: Monitor,
-  event: 'monitor.down' | 'monitor.up',
+  event: 'monitor.down' | 'monitor.up' | 'monitor.slow',
   incident: Incident,
+  options?: { lastPingDuration?: number },
 ) {
   // Get alert channels linked to this monitor
   const linkedChannels = await db
@@ -79,7 +104,22 @@ export async function dispatchAlerts(
     channels = channels.filter((c) => c.isDefault);
   }
 
-  const payload = buildAlertPayload(monitor, event, incident);
+  // Fetch the most recent ping body
+  const [lastPing] = await db
+    .select({ body: pings.body })
+    .from(pings)
+    .where(eq(pings.monitorId, monitor.id))
+    .orderBy(desc(pings.receivedAt))
+    .limit(1);
+
+  const lastPingBody = lastPing?.body || null;
+
+  const payload = buildAlertPayload(monitor, event, incident, lastPingBody);
+
+  // Add duration info for slow alerts
+  if (event === 'monitor.slow' && options?.lastPingDuration !== undefined) {
+    payload.monitor.lastPingDuration = options.lastPingDuration;
+  }
 
   // Update lastAlertAt
   await db
@@ -113,16 +153,29 @@ async function sendToChannel(channel: AlertChannel, payload: AlertEvent) {
 }
 
 async function sendEmail(to: string, payload: AlertEvent) {
+  const isSlow = payload.event === 'monitor.slow';
   const isDown = payload.event === 'monitor.down';
-  const subject = isDown
-    ? `[DOWN] ${payload.monitor.name} is not responding`
-    : `[RECOVERED] ${payload.monitor.name} is back up`;
+
+  const subject = isSlow
+    ? `[SLOW] ${payload.monitor.name}`
+    : isDown
+      ? `[DOWN] ${payload.monitor.name} is not responding`
+      : `[RECOVERED] ${payload.monitor.name} is back up`;
 
   const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/monitors/${payload.monitor.id}`;
 
-  const text = isDown
-    ? `Monitor "${payload.monitor.name}" has not sent a ping within its expected interval.\n\nLast ping: ${payload.monitor.lastPingAt ?? 'never'}\nDown since: ${payload.incident.startedAt}\n\nCheck your dashboard: ${dashboardUrl}`
-    : `Monitor "${payload.monitor.name}" has recovered after ${payload.incident.duration} of downtime.\n\nCheck your dashboard: ${dashboardUrl}`;
+  const slowInfo =
+    isSlow &&
+    payload.monitor.lastPingDuration !== undefined &&
+    payload.monitor.maxDuration !== undefined
+      ? `Last run took ${formatDurationMs(payload.monitor.lastPingDuration)}, max allowed is ${formatDurationMs(payload.monitor.maxDuration)}.`
+      : '';
+
+  const text = isSlow
+    ? `Monitor "${payload.monitor.name}" exceeded its max duration.\n\n${slowInfo}\n\nCheck your dashboard: ${dashboardUrl}`
+    : isDown
+      ? `Monitor "${payload.monitor.name}" has not sent a ping within its expected interval.\n\nLast ping: ${payload.monitor.lastPingAt ? formatTimestamp(payload.monitor.lastPingAt) : 'never'}\nDown since: ${formatTimestamp(payload.incident.startedAt)}\n\nCheck your dashboard: ${dashboardUrl}`
+      : `Monitor "${payload.monitor.name}" has recovered after ${payload.incident.duration} of downtime.\n\nCheck your dashboard: ${dashboardUrl}`;
 
   const html = alertEmail(payload, dashboardUrl);
 
@@ -136,26 +189,64 @@ async function sendEmail(to: string, payload: AlertEvent) {
 }
 
 function alertEmail(payload: AlertEvent, dashboardUrl: string): string {
+  const isSlow = payload.event === 'monitor.slow';
   const isDown = payload.event === 'monitor.down';
-  const statusColor = isDown ? '#ef4444' : '#22c55e';
-  const statusLabel = isDown ? 'DOWN' : 'RECOVERED';
-  const statusBg = isDown ? '#fef2f2' : '#f0fdf4';
 
-  const details = isDown
-    ? `
+  const statusColor = isDown || isSlow ? '#ef4444' : '#22c55e';
+  const statusLabel = isSlow ? 'SLOW' : isDown ? 'DOWN' : 'RECOVERED';
+  const statusBg = isDown || isSlow ? '#fef2f2' : '#f0fdf4';
+
+  let details: string;
+  if (isSlow) {
+    const actualDuration =
+      payload.monitor.lastPingDuration !== undefined
+        ? formatDurationMs(payload.monitor.lastPingDuration)
+        : 'unknown';
+    const maxDuration =
+      payload.monitor.maxDuration !== undefined
+        ? formatDurationMs(payload.monitor.maxDuration)
+        : 'unknown';
+    details = `
           <tr><td style="padding:8px 0;font-size:14px;color:#52525b;border-bottom:1px solid #f4f4f5;">
-            <strong style="color:#18181b;">Last ping</strong><br>${payload.monitor.lastPingAt ?? 'Never'}
+            <strong style="color:#18181b;">Last run duration</strong><br>${actualDuration}
           </td></tr>
           <tr><td style="padding:8px 0;font-size:14px;color:#52525b;">
-            <strong style="color:#18181b;">Down since</strong><br>${payload.incident.startedAt}
-          </td></tr>`
-    : `
+            <strong style="color:#18181b;">Max allowed</strong><br>${maxDuration}
+          </td></tr>`;
+  } else if (isDown) {
+    details = `
+          <tr><td style="padding:8px 0;font-size:14px;color:#52525b;border-bottom:1px solid #f4f4f5;">
+            <strong style="color:#18181b;">Last ping</strong><br>${payload.monitor.lastPingAt ? formatTimestamp(payload.monitor.lastPingAt) : 'Never'}
+          </td></tr>
+          <tr><td style="padding:8px 0;font-size:14px;color:#52525b;">
+            <strong style="color:#18181b;">Down since</strong><br>${formatTimestamp(payload.incident.startedAt)}
+          </td></tr>`;
+  } else {
+    details = `
           <tr><td style="padding:8px 0;font-size:14px;color:#52525b;border-bottom:1px solid #f4f4f5;">
             <strong style="color:#18181b;">Downtime duration</strong><br>${payload.incident.duration}
           </td></tr>
           <tr><td style="padding:8px 0;font-size:14px;color:#52525b;">
-            <strong style="color:#18181b;">Resolved at</strong><br>${payload.timestamp}
+            <strong style="color:#18181b;">Resolved at</strong><br>${formatTimestamp(payload.timestamp)}
           </td></tr>`;
+  }
+
+  // Add last output section if body is present
+  let bodySection = '';
+  if (payload.monitor.lastPingBody) {
+    const truncated = truncateBody(payload.monitor.lastPingBody, 2000);
+    const escaped = truncated
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+    bodySection = `
+          <tr><td style="padding:16px 0 0;">
+            <strong style="color:#18181b;font-size:14px;">Last output</strong>
+          </td></tr>
+          <tr><td style="padding:8px 0;font-size:13px;">
+            <pre style="margin:0;padding:12px;background-color:#f4f4f5;border-radius:6px;font-family:'SF Mono',Monaco,Consolas,monospace;font-size:12px;color:#18181b;white-space:pre-wrap;word-break:break-all;overflow-x:auto;">${escaped}</pre>
+          </td></tr>`;
+  }
 
   return `
 <!DOCTYPE html>
@@ -181,6 +272,7 @@ function alertEmail(payload: AlertEvent, dashboardUrl: string): string {
           <p style="margin:0 0 24px;font-size:14px;color:#71717a;">/${payload.monitor.slug}</p>
           <table width="100%" cellpadding="0" cellspacing="0">
             ${details}
+            ${bodySection}
           </table>
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:28px;">
             <tr><td align="center">
@@ -204,11 +296,39 @@ function alertEmail(payload: AlertEvent, dashboardUrl: string): string {
 }
 
 async function sendSlackWebhook(webhookUrl: string, payload: AlertEvent) {
+  const isSlow = payload.event === 'monitor.slow';
   const isDown = payload.event === 'monitor.down';
-  const color = isDown ? '#ef4444' : '#22c55e';
-  const title = isDown
-    ? `[DOWN] ${payload.monitor.name}`
-    : `[RECOVERED] ${payload.monitor.name}`;
+  const isAlert = isDown || isSlow;
+  const color = isAlert ? '#ef4444' : '#22c55e';
+
+  const title = isSlow
+    ? `[SLOW] ${payload.monitor.name}`
+    : isDown
+      ? `[DOWN] ${payload.monitor.name}`
+      : `[RECOVERED] ${payload.monitor.name}`;
+
+  let text: string;
+  if (
+    isSlow &&
+    payload.monitor.lastPingDuration !== undefined &&
+    payload.monitor.maxDuration !== undefined
+  ) {
+    text = `Last run took ${formatDurationMs(payload.monitor.lastPingDuration)}, max allowed is ${formatDurationMs(payload.monitor.maxDuration)}.`;
+  } else if (isDown) {
+    text = `Monitor has not pinged within expected interval. Down since ${formatTimestamp(payload.incident.startedAt)}.`;
+  } else {
+    text = `Monitor recovered after ${payload.incident.duration} of downtime.`;
+  }
+
+  // Add body as a field if present
+  const fields: Array<{ title: string; value: string; short: boolean }> = [];
+  if (payload.monitor.lastPingBody) {
+    fields.push({
+      title: 'Last output',
+      value: truncateBody(payload.monitor.lastPingBody, 500),
+      short: false,
+    });
+  }
 
   await fetch(webhookUrl, {
     method: 'POST',
@@ -218,9 +338,8 @@ async function sendSlackWebhook(webhookUrl: string, payload: AlertEvent) {
         {
           color,
           title,
-          text: isDown
-            ? `Monitor has not pinged within expected interval. Down since ${payload.incident.startedAt}.`
-            : `Monitor recovered after ${payload.incident.duration} of downtime.`,
+          text,
+          fields: fields.length > 0 ? fields : undefined,
           footer: 'PulseMon',
           ts: Math.floor(new Date(payload.timestamp).getTime() / 1000),
         },
@@ -231,7 +350,28 @@ async function sendSlackWebhook(webhookUrl: string, payload: AlertEvent) {
 }
 
 async function sendDiscordWebhook(webhookUrl: string, payload: AlertEvent) {
+  const isSlow = payload.event === 'monitor.slow';
   const isDown = payload.event === 'monitor.down';
+  const isAlert = isDown || isSlow;
+
+  let description: string;
+  if (
+    isSlow &&
+    payload.monitor.lastPingDuration !== undefined &&
+    payload.monitor.maxDuration !== undefined
+  ) {
+    description = `Last run took ${formatDurationMs(payload.monitor.lastPingDuration)}, max allowed is ${formatDurationMs(payload.monitor.maxDuration)}.`;
+  } else if (isDown) {
+    description = `Monitor has not pinged within expected interval.`;
+  } else {
+    description = `Monitor recovered after ${payload.incident.duration}.`;
+  }
+
+  // Add body in a code block if present
+  if (payload.monitor.lastPingBody) {
+    const truncated = truncateBody(payload.monitor.lastPingBody, 500);
+    description += `\n\n**Last output**\n\`\`\`\n${truncated}\n\`\`\``;
+  }
 
   await fetch(webhookUrl, {
     method: 'POST',
@@ -239,13 +379,13 @@ async function sendDiscordWebhook(webhookUrl: string, payload: AlertEvent) {
     body: JSON.stringify({
       embeds: [
         {
-          title: isDown
-            ? `[DOWN] ${payload.monitor.name}`
-            : `[RECOVERED] ${payload.monitor.name}`,
-          description: isDown
-            ? `Monitor has not pinged within expected interval.`
-            : `Monitor recovered after ${payload.incident.duration}.`,
-          color: isDown ? 0xef4444 : 0x22c55e,
+          title: isSlow
+            ? `[SLOW] ${payload.monitor.name}`
+            : isDown
+              ? `[DOWN] ${payload.monitor.name}`
+              : `[RECOVERED] ${payload.monitor.name}`,
+          description,
+          color: isAlert ? 0xef4444 : 0x22c55e,
           timestamp: payload.timestamp,
           footer: { text: 'PulseMon' },
         },

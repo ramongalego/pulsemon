@@ -350,6 +350,112 @@ fi`}</code>
         </div>
       </Section>
 
+      {/* Sending Job Output */}
+      <Section
+        dashboard={isDashboard}
+        title="Sending Job Output"
+        id="job-output"
+        description="Attach your job's stdout, stderr, or a summary to the ping. When PulseMon fires an alert, the output is included so you can see why a job failed without SSHing into the server."
+      >
+        <div className="space-y-4">
+          <p className="text-muted-foreground text-sm">
+            Send output as the{' '}
+            <code className="bg-muted rounded px-1.5 py-0.5 text-xs">body</code>{' '}
+            field in a POST request. Up to 10 KB. The body is shown in your ping
+            history and included in all alert notifications (email, Slack,
+            Discord, and webhooks).
+          </p>
+
+          <div>
+            <h4 className="mb-2 text-sm font-semibold">Pipe script output</h4>
+            <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-sm">
+              <code>{`#!/bin/bash
+set -e
+
+# Capture output and exit code
+OUTPUT=$(./backup.sh 2>&1) || STATUS="fail"
+
+# Send the output with the ping
+curl -fsS --retry 3 -X POST ${BASE_URL}/api/ping/nightly-backup \\
+  -H "Content-Type: application/json" \\
+  -d "$(jq -n --arg body "$OUTPUT" --arg status "\${STATUS:-success}" \\
+    '{status: $status, body: $body}')"`}</code>
+            </pre>
+          </div>
+
+          <div>
+            <h4 className="mb-2 text-sm font-semibold">Send structured data</h4>
+            <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-sm">
+              <code>{`import requests, time, json
+
+start = time.time()
+result = process_records()
+duration = int((time.time() - start) * 1000)
+
+requests.post(
+    "${BASE_URL}/api/ping/record-processor",
+    json={
+        "duration": duration,
+        "body": json.dumps({
+            "rows_processed": result.count,
+            "errors": result.errors,
+            "source": "warehouse-db",
+        }),
+    },
+    timeout=10,
+)`}</code>
+            </pre>
+          </div>
+
+          <p className="text-muted-foreground text-sm">
+            If the body is valid JSON, PulseMon pretty-prints it in the
+            dashboard with syntax highlighting. Plain text is shown in a
+            monospace code block.
+          </p>
+        </div>
+      </Section>
+
+      {/* Duration Thresholds */}
+      <Section
+        dashboard={isDashboard}
+        title="Duration Thresholds"
+        id="duration-thresholds"
+        description="Get alerted when a job completes but takes longer than expected."
+      >
+        <div className="space-y-4">
+          <p className="text-muted-foreground text-sm">
+            Set a <strong>max duration</strong> on any monitor (under Advanced
+            Settings). If a ping reports a{' '}
+            <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
+              duration
+            </code>{' '}
+            that exceeds the threshold, PulseMon fires a{' '}
+            <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
+              [SLOW]
+            </code>{' '}
+            alert and opens an incident. When the next ping comes in under the
+            threshold, the incident auto-resolves.
+          </p>
+          <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-sm">
+            <code>{`# Report duration so PulseMon can check against your threshold
+START=$(date +%s%3N)
+./etl-pipeline.sh
+END=$(date +%s%3N)
+DURATION=$((END - START))
+
+curl -fsS --retry 3 "${BASE_URL}/api/ping/etl-pipeline?duration=$DURATION"`}</code>
+          </pre>
+          <p className="text-muted-foreground text-sm">
+            Duration is in milliseconds. For example, set the max to 300 seconds
+            (5 minutes) in the dashboard, then pass{' '}
+            <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
+              duration=360000
+            </code>{' '}
+            to trigger a slow alert.
+          </p>
+        </div>
+      </Section>
+
       {/* Rate Limiting */}
       <Section dashboard={isDashboard} title="Rate Limiting" id="rate-limiting">
         <div className="space-y-4">
@@ -555,7 +661,8 @@ CMD ["crond", "-f", "-l", "2"]`}</code>
     "slug": "nightly-backup",
     "status": "down",
     "lastPingAt": "2025-01-15T02:00:00Z",
-    "expectedInterval": 86400
+    "expectedInterval": 86400,
+    "lastPingBody": "pg_dump: error: connection refused"
   },
   "incident": {
     "id": "uuid",
@@ -565,19 +672,31 @@ CMD ["crond", "-f", "-l", "2"]`}</code>
 }`}</code>
         </pre>
         <p className="text-muted-foreground text-sm">
-          Recovery events have the same shape with{' '}
+          The{' '}
+          <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
+            lastPingBody
+          </code>{' '}
+          field contains the output from the most recent ping, if any was sent.
+          It&apos;s included in all alert types.
+        </p>
+        <p className="text-muted-foreground mt-2 text-sm">
+          Recovery events use{' '}
           <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
             &quot;event&quot;: &quot;monitor.up&quot;
-          </code>{' '}
-          and the incident includes{' '}
+          </code>
+          . Slow alerts use{' '}
           <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
-            resolvedAt
+            &quot;event&quot;: &quot;monitor.slow&quot;
+          </code>{' '}
+          and include{' '}
+          <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
+            lastPingDuration
           </code>{' '}
           and{' '}
           <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
-            duration
+            maxDuration
           </code>{' '}
-          (seconds the monitor was down).
+          on the monitor object.
         </p>
       </Section>
 

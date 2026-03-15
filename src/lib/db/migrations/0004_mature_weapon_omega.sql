@@ -1,0 +1,1 @@
+ALTER TABLE "monitors" ADD COLUMN "max_duration_ms" integer;
