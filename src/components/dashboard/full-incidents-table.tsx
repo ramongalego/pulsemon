@@ -21,7 +21,9 @@ export function FullIncidentsTable({ incidents }: { incidents: Incident[] }) {
             <span className="font-medium">
               {incident.cause === 'missed_ping'
                 ? 'Missed Ping'
-                : incident.cause}
+                : incident.cause === 'duration_exceeded'
+                  ? 'Duration Exceeded'
+                  : incident.cause}
             </span>
             <span className="text-muted-foreground ml-2">
               <RelativeTime date={incident.startedAt} />

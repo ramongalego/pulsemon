@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { RelativeTime } from '@/components/shared/relative-time';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { Ping } from '@/lib/db/schema';
 
 const PAGE_SIZE = 10;
@@ -85,23 +85,15 @@ function PingRow({ ping }: { ping: Ping }) {
   return (
     <div className="rounded-lg border">
       <div
-        className={`grid grid-cols-3 gap-4 px-2 py-2 text-sm sm:grid-cols-4 ${hasBody ? 'cursor-pointer select-none' : ''}`}
+        className={`grid grid-cols-[1fr_1fr_1fr_auto] gap-4 px-2 py-2 text-sm sm:grid-cols-[1fr_1fr_1fr_1fr_auto] ${hasBody ? 'cursor-pointer select-none' : ''}`}
         onClick={hasBody ? () => setExpanded(!expanded) : undefined}
       >
-        <span className="flex items-center gap-1">
-          {hasBody &&
-            (expanded ? (
-              <ChevronDown className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-            ) : (
-              <ChevronRight className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-            ))}
-          <span
-            className={
-              ping.status === 'success' ? 'text-green-600' : 'text-red-600'
-            }
-          >
-            {ping.status === 'success' ? 'OK' : 'FAIL'}
-          </span>
+        <span
+          className={
+            ping.status === 'success' ? 'text-green-600' : 'text-red-600'
+          }
+        >
+          {ping.status === 'success' ? 'OK' : 'FAIL'}
         </span>
         <span>
           <RelativeTime date={ping.receivedAt} />
@@ -111,6 +103,14 @@ function PingRow({ ping }: { ping: Ping }) {
         </span>
         <span className="text-muted-foreground hidden truncate sm:block">
           {ping.sourceIp || '—'}
+        </span>
+        <span className="flex w-5 items-center justify-center">
+          {hasBody &&
+            (expanded ? (
+              <ChevronUp className="text-muted-foreground h-3.5 w-3.5" />
+            ) : (
+              <ChevronDown className="text-muted-foreground h-3.5 w-3.5" />
+            ))}
         </span>
       </div>
       {expanded && hasBody && (
@@ -177,11 +177,12 @@ export function PingsTable({
 
   return (
     <div className="space-y-2">
-      <div className="text-muted-foreground grid grid-cols-3 gap-4 px-2 text-xs font-medium sm:grid-cols-4">
+      <div className="text-muted-foreground grid grid-cols-[1fr_1fr_1fr_auto] gap-4 px-2 text-xs font-medium sm:grid-cols-[1fr_1fr_1fr_1fr_auto]">
         <span>Status</span>
         <span>Received</span>
         <span>Duration</span>
         <span className="hidden sm:block">Source IP</span>
+        <span className="w-5" />
       </div>
       {allPings.map((ping) => (
         <PingRow key={ping.id} ping={ping} />
