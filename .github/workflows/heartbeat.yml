@@ -10,6 +10,10 @@ jobs:
     steps:
       - name: Ping PulseMon
         run: |
+          START=$(date +%s%3N)
+          sleep "1.$(shuf -i 0-999 -n 1)"
+          END=$(date +%s%3N)
+          DURATION=$((END - START))
           curl -fsS -X POST https://pulsemon.dev/api/ping/github-heartbeat \
             -H "Content-Type: application/json" \
-            -d "{\"body\": \"Workflow: ${{ github.workflow }}\nRun: ${{ github.run_id }}\nTriggered by: ${{ github.event_name }}\nRunner: $(uname -s) $(uname -r)\"}"
+            -d "{\"duration\": $DURATION, \"body\": \"Workflow: ${{ github.workflow }}\nRun: ${{ github.run_id }}\nTriggered by: ${{ github.event_name }}\nRunner: $(uname -s) $(uname -r)\nDuration: ${DURATION}ms\"}"
