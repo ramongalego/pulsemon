@@ -381,6 +381,8 @@ async function sendSlackWebhook(webhookUrl: string, payload: AlertEvent) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      username: 'PulseMon',
+      icon_url: 'https://pulsemon.dev/icon-large',
       attachments: [
         {
           color,
@@ -427,6 +429,8 @@ async function sendDiscordWebhook(webhookUrl: string, payload: AlertEvent) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      username: 'PulseMon',
+      avatar_url: 'https://pulsemon.dev/icon-large',
       embeds: [
         {
           title: isOverlap
