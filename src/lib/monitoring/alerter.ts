@@ -300,7 +300,7 @@ function alertEmail(payload: AlertEvent, dashboardUrl: string): string {
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;background-color:#ffffff;border-radius:12px;overflow:hidden;">
         <!-- Header -->
         <tr><td style="background-color:#0a0a0a;padding:32px 40px;text-align:center;">
-          <img src="https://pulsemon.dev/icon-large" alt="" width="32" height="32" style="display:inline-block;vertical-align:middle;border-radius:6px;margin-right:10px;" />
+          <img src="https://pulsemon.dev/icon-large" alt="" width="32" height="32" style="display:inline-block;vertical-align:middle;border-radius:6px;" />
           <span style="color:#ffffff;font-size:20px;font-weight:700;letter-spacing:-0.5px;vertical-align:middle;">PulseMon</span>
         </td></tr>
         <!-- Status badge -->
