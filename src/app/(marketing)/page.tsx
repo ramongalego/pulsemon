@@ -14,10 +14,10 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import {
-  Activity,
+  AlertCircle,
   ArrowRight,
-  Code2,
   FileText,
+  GitMerge,
   Globe,
   LayoutDashboard,
   Lock,
@@ -264,48 +264,88 @@ export default function LandingPage() {
           </p>
 
           <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                icon: Zap,
-                title: 'Instant alerts',
-                desc: 'Slack, Discord, email, and webhooks. Know within minutes.',
-              },
-              {
-                icon: LayoutDashboard,
-                title: 'Ping history and uptime',
-                desc: 'See every ping, response time, and incident. Track uptime over 7, 30, or 90 days.',
-              },
-              {
-                icon: Activity,
-                title: 'Generous free tier',
-                desc: '30 monitors, 2-minute checks. No credit card required.',
-              },
-              {
-                icon: Globe,
-                title: 'Public status pages',
-                desc: 'Share a branded status page with your users. Shows uptime, incidents, and current status.',
-              },
-              {
-                icon: FileText,
-                title: 'Alerts include job output',
-                desc: "Send your job's stdout or stderr with the ping. When it fails, the alert shows you why. No SSH required.",
-              },
-              {
-                icon: Code2,
-                title: 'API-first',
-                desc: 'Full REST API. Manage everything programmatically.',
-              },
-              {
-                icon: Timer,
-                title: 'Duration thresholds',
-                desc: 'Set a max run time. Get alerted when a job finishes but took way too long.',
-              },
-              {
-                icon: Lock,
-                title: 'Webhook signatures',
-                desc: 'Every outbound webhook is HMAC-signed. Verify it came from PulseMon.',
-              },
-            ].map((feature) => (
+            {(
+              [
+                {
+                  icon: Zap,
+                  title: 'Instant alerts',
+                  desc: 'Slack, Discord, email, and webhooks. Know within minutes. Escalating reminders at 1h, 6h, and 24h until resolved.',
+                },
+                {
+                  icon: LayoutDashboard,
+                  title: 'Ping history and uptime',
+                  desc: 'See every ping, response time, and incident. Track uptime over 7, 30, or 90 days.',
+                },
+                {
+                  icon: GitMerge,
+                  title: 'Overlap detection',
+                  desc: (
+                    <>
+                      Send{' '}
+                      <code className="bg-muted rounded px-1 py-0.5 text-xs">
+                        ?status=start
+                      </code>{' '}
+                      before your job runs. Get alerted if a new run begins
+                      before the previous one finishes.
+                    </>
+                  ),
+                },
+                {
+                  icon: Globe,
+                  title: 'Public status pages',
+                  desc: 'Share a branded status page with your users. Shows uptime, incidents, and current status.',
+                },
+                {
+                  icon: FileText,
+                  title: 'Alerts include job output',
+                  desc: (
+                    <>
+                      Send your job&apos;s{' '}
+                      <code className="bg-muted rounded px-1 py-0.5 text-xs">
+                        stdout
+                      </code>{' '}
+                      or{' '}
+                      <code className="bg-muted rounded px-1 py-0.5 text-xs">
+                        stderr
+                      </code>{' '}
+                      with the ping. When it fails, the alert shows you why.
+                    </>
+                  ),
+                },
+                {
+                  icon: AlertCircle,
+                  title: 'Explicit failure alerts',
+                  desc: (
+                    <>
+                      Send{' '}
+                      <code className="bg-muted rounded px-1 py-0.5 text-xs">
+                        ?status=fail
+                      </code>{' '}
+                      and get an immediate alert. No waiting for a missed
+                      deadline.
+                    </>
+                  ),
+                },
+                {
+                  icon: Timer,
+                  title: 'Duration thresholds',
+                  desc: 'Set a max run time. Get alerted when a job finishes but took way too long.',
+                },
+                {
+                  icon: Lock,
+                  title: 'Webhook signatures',
+                  desc: (
+                    <>
+                      Every outbound webhook is{' '}
+                      <code className="bg-muted rounded px-1 py-0.5 text-xs">
+                        HMAC-SHA256
+                      </code>{' '}
+                      signed. Verify it came from PulseMon.
+                    </>
+                  ),
+                },
+              ] as const
+            ).map((feature) => (
               <Card key={feature.title} className="shadow-none">
                 <CardHeader className="pb-2">
                   <feature.icon className="text-primary mb-2 h-8 w-8" />
@@ -535,7 +575,9 @@ export default function LandingPage() {
               <AccordionContent>
                 We check your monitors every 2 minutes on Free (60s on Starter,
                 10s on Pro). Once a missed ping is detected, alerts are
-                dispatched within seconds.
+                dispatched within seconds. If your job explicitly reports a
+                failure via ?status=fail, the alert fires immediately without
+                waiting for a missed deadline.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value="free-tier">
@@ -576,6 +618,42 @@ export default function LandingPage() {
                 within the expected interval plus a grace period, the monitor
                 fires an alert. It&apos;s the simplest way to know that a
                 scheduled job is still running on time.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="signal-types">
+              <AccordionTrigger>
+                What is the difference between a start, success, and fail ping?
+              </AccordionTrigger>
+              <AccordionContent>
+                A success ping (the default) tells PulseMon your job finished
+                successfully and resets the deadline. A start ping tells
+                PulseMon your job has begun, useful for overlap detection, which
+                alerts you if a new run starts before the previous one finishes.
+                A fail ping tells PulseMon your job failed and fires an
+                immediate alert without waiting for a missed deadline.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="duration-threshold">
+              <AccordionTrigger>
+                Can I get alerted if my job takes too long?
+              </AccordionTrigger>
+              <AccordionContent>
+                Yes. Set a max duration on any monitor and PulseMon will alert
+                you if a job checks in successfully but took longer than
+                expected. Useful for catching zombie jobs that are technically
+                running but stuck in a loop or processing far more data than
+                normal.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="overlap">
+              <AccordionTrigger>
+                What happens if my job runs twice at the same time?
+              </AccordionTrigger>
+              <AccordionContent>
+                If you use start pings, PulseMon detects overlapping runs and
+                alerts you immediately. This catches race conditions where a
+                slow job is still running when the next scheduled run fires, a
+                common cause of duplicate records and data corruption.
               </AccordionContent>
             </AccordionItem>
           </Accordion>
