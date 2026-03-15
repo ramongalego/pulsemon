@@ -90,10 +90,18 @@ function PingRow({ ping }: { ping: Ping }) {
       >
         <span
           className={
-            ping.status === 'success' ? 'text-green-600' : 'text-red-600'
+            ping.status === 'success'
+              ? 'text-green-600'
+              : ping.status === 'start'
+                ? 'text-blue-600'
+                : 'text-red-600'
           }
         >
-          {ping.status === 'success' ? 'OK' : 'FAIL'}
+          {ping.status === 'success'
+            ? 'OK'
+            : ping.status === 'start'
+              ? 'START'
+              : 'FAIL'}
         </span>
         <span>
           <RelativeTime date={ping.receivedAt} />

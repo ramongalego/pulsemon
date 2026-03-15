@@ -4,6 +4,8 @@ import {
   shouldSendReminder,
   isDurationExceeded,
   truncateBody,
+  isOverlap,
+  nextRunningState,
 } from '@/lib/monitoring/utils';
 
 describe('isMonitorLate', () => {
@@ -180,5 +182,37 @@ describe('truncateBody', () => {
 
   it('omits section when body is empty', () => {
     expect(truncateBody('', 2000)).toBe('');
+  });
+});
+
+describe('isOverlap', () => {
+  it('returns true when start ping received while already running', () => {
+    expect(isOverlap(true, 'start')).toBe(true);
+  });
+
+  it('returns false when start ping received while not running', () => {
+    expect(isOverlap(false, 'start')).toBe(false);
+  });
+
+  it('returns false for success ping even if running', () => {
+    expect(isOverlap(true, 'success')).toBe(false);
+  });
+
+  it('returns false for fail ping even if running', () => {
+    expect(isOverlap(true, 'fail')).toBe(false);
+  });
+});
+
+describe('nextRunningState', () => {
+  it('returns true for start ping', () => {
+    expect(nextRunningState('start')).toBe(true);
+  });
+
+  it('returns false for success ping', () => {
+    expect(nextRunningState('success')).toBe(false);
+  });
+
+  it('returns false for fail ping', () => {
+    expect(nextRunningState('fail')).toBe(false);
   });
 });

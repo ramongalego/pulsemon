@@ -159,6 +159,15 @@ export default async function MonitorDetailPage({
             ) : (
               <StatusBadge status={monitor.status} />
             )}
+            {monitor.isRunning && (
+              <Badge
+                variant="outline"
+                className="gap-1.5 border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+              >
+                <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+                Running
+              </Badge>
+            )}
             {uptimePercent !== null ? (
               <Badge
                 variant="outline"

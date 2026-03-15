@@ -19,7 +19,11 @@ export const monitorStatusEnum = pgEnum('monitor_status', [
   'paused',
   'new',
 ]);
-export const pingStatusEnum = pgEnum('ping_status', ['success', 'fail']);
+export const pingStatusEnum = pgEnum('ping_status', [
+  'success',
+  'fail',
+  'start',
+]);
 export const alertChannelTypeEnum = pgEnum('alert_channel_type', [
   'email',
   'slack',
@@ -104,6 +108,8 @@ export const monitors = pgTable(
     isPaused: boolean('is_paused').default(false).notNull(),
     tags: text('tags').array().default([]).notNull(),
     maxDuration: integer('max_duration_ms'),
+    lastStartAt: timestamp('last_start_at', { withTimezone: true }),
+    isRunning: boolean('is_running').default(false).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull(),

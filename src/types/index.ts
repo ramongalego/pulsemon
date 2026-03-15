@@ -13,7 +13,7 @@ export type ApiResponse<T> =
 export type MonitorStatus = 'up' | 'down' | 'paused' | 'new';
 
 // Ping status type
-export type PingStatus = 'success' | 'fail';
+export type PingStatus = 'success' | 'fail' | 'start';
 
 // Plan type
 export type Plan = 'free' | 'starter' | 'pro' | 'lifetime';
@@ -48,7 +48,7 @@ export type AlertChannelConfig =
 
 // Alert event payload (for webhooks)
 export type AlertEvent = {
-  event: 'monitor.down' | 'monitor.up' | 'monitor.slow';
+  event: 'monitor.down' | 'monitor.up' | 'monitor.slow' | 'monitor.overlap';
   monitor: {
     id: string;
     name: string;
@@ -60,6 +60,7 @@ export type AlertEvent = {
     lastPingBody?: string | null;
     maxDuration?: number;
     lastPingDuration?: number;
+    lastStartAt?: string;
   };
   incident: {
     id: string;

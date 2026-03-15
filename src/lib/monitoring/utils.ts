@@ -21,6 +21,27 @@ export function truncateBody(body: string, maxLength: number): string {
 }
 
 /**
+ * Determines if a start ping creates an overlap.
+ * Returns true if the monitor is already running when a new start arrives.
+ */
+export function isOverlap(
+  isRunning: boolean,
+  pingStatus: 'success' | 'fail' | 'start',
+): boolean {
+  return pingStatus === 'start' && isRunning;
+}
+
+/**
+ * Determines the new isRunning state after a ping.
+ * Start pings set it to true, success/fail pings set it to false.
+ */
+export function nextRunningState(
+  pingStatus: 'success' | 'fail' | 'start',
+): boolean {
+  return pingStatus === 'start';
+}
+
+/**
  * Determines if a monitor is late based on last ping time,
  * expected interval, and grace period.
  */

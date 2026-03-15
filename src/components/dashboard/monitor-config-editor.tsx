@@ -206,30 +206,45 @@ export function MonitorConfigEditor({ monitor }: { monitor: Monitor }) {
           Advanced settings
         </button>
         {showAdvanced && (
-          <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="config-max-duration">
-                Max duration (seconds)
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="config-max-duration"
-                  className="w-32"
-                  type="number"
-                  min={1}
-                  value={maxDuration}
-                  placeholder="e.g. 300"
-                  onChange={(e) => setMaxDuration(e.target.value)}
-                />
-                <span className="text-muted-foreground flex items-center text-sm">
-                  seconds
-                </span>
+          <>
+            <div className="mt-3 grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="config-max-duration">
+                  Max duration (seconds)
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="config-max-duration"
+                    className="w-32"
+                    type="number"
+                    min={1}
+                    value={maxDuration}
+                    placeholder="e.g. 300"
+                    onChange={(e) => setMaxDuration(e.target.value)}
+                  />
+                  <span className="text-muted-foreground flex items-center text-sm">
+                    seconds
+                  </span>
+                </div>
+                <p className="text-muted-foreground text-xs">
+                  Alert if a run takes longer than this. Leave empty to disable.
+                </p>
               </div>
-              <p className="text-muted-foreground text-xs">
-                Alert if a run takes longer than this. Leave empty to disable.
-              </p>
             </div>
-          </div>
+            <p className="text-muted-foreground mt-3 text-xs">
+              You can also send{' '}
+              <code className="bg-muted rounded px-1 py-0.5">
+                ?status=start
+              </code>{' '}
+              pings to detect overlapping runs.{' '}
+              <a
+                href="/docs#start-signal"
+                className="text-primary hover:underline"
+              >
+                Learn more
+              </a>
+            </p>
+          </>
         )}
       </div>
       <div className="flex items-center gap-3">

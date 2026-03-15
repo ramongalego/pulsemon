@@ -23,7 +23,9 @@ export function FullIncidentsTable({ incidents }: { incidents: Incident[] }) {
                 ? 'Missed Ping'
                 : incident.cause === 'duration_exceeded'
                   ? 'Duration Exceeded'
-                  : incident.cause}
+                  : incident.cause === 'overlap'
+                    ? 'Overlap'
+                    : incident.cause}
             </span>
             <span className="text-muted-foreground ml-2">
               <RelativeTime date={incident.startedAt} />

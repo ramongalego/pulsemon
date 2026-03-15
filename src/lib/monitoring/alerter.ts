@@ -40,27 +40,37 @@ function formatTimestamp(iso: string): string {
   });
 }
 
+type AlertEventType =
+  | 'monitor.down'
+  | 'monitor.up'
+  | 'monitor.slow'
+  | 'monitor.overlap';
+
 function buildAlertPayload(
   monitor: Monitor,
-  event: 'monitor.down' | 'monitor.up' | 'monitor.slow',
+  event: AlertEventType,
   incident: Incident,
   lastPingBody: string | null,
 ): AlertEvent {
   const now = new Date();
+  const isNegative =
+    event === 'monitor.down' ||
+    event === 'monitor.slow' ||
+    event === 'monitor.overlap';
   return {
     event,
     monitor: {
       id: monitor.id,
       name: monitor.name,
       slug: monitor.slug,
-      status:
-        event === 'monitor.down' || event === 'monitor.slow' ? 'down' : 'up',
+      status: isNegative ? 'down' : 'up',
       lastPingAt: monitor.lastPingAt?.toISOString() ?? null,
       expectedInterval: monitor.expectedInterval,
       downSince:
         event === 'monitor.down' ? incident.startedAt.toISOString() : undefined,
       lastPingBody: lastPingBody ?? undefined,
       maxDuration: monitor.maxDuration ?? undefined,
+      lastStartAt: monitor.lastStartAt?.toISOString(),
     },
     incident: {
       id: incident.id,
@@ -78,7 +88,7 @@ function buildAlertPayload(
 
 export async function dispatchAlerts(
   monitor: Monitor,
-  event: 'monitor.down' | 'monitor.up' | 'monitor.slow',
+  event: AlertEventType,
   incident: Incident,
   options?: { lastPingDuration?: number },
 ) {
@@ -155,12 +165,15 @@ async function sendToChannel(channel: AlertChannel, payload: AlertEvent) {
 async function sendEmail(to: string, payload: AlertEvent) {
   const isSlow = payload.event === 'monitor.slow';
   const isDown = payload.event === 'monitor.down';
+  const isOverlap = payload.event === 'monitor.overlap';
 
-  const subject = isSlow
-    ? `[SLOW] ${payload.monitor.name}`
-    : isDown
-      ? `[DOWN] ${payload.monitor.name} is not responding`
-      : `[RECOVERED] ${payload.monitor.name} is back up`;
+  const subject = isOverlap
+    ? `[OVERLAP] ${payload.monitor.name}`
+    : isSlow
+      ? `[SLOW] ${payload.monitor.name}`
+      : isDown
+        ? `[DOWN] ${payload.monitor.name} is not responding`
+        : `[RECOVERED] ${payload.monitor.name} is back up`;
 
   const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/monitors/${payload.monitor.id}`;
 
@@ -171,11 +184,17 @@ async function sendEmail(to: string, payload: AlertEvent) {
       ? `Last run took ${formatDurationMs(payload.monitor.lastPingDuration)}, max allowed is ${formatDurationMs(payload.monitor.maxDuration)}.`
       : '';
 
-  const text = isSlow
-    ? `Monitor "${payload.monitor.name}" exceeded its max duration.\n\n${slowInfo}\n\nCheck your dashboard: ${dashboardUrl}`
-    : isDown
-      ? `Monitor "${payload.monitor.name}" has not sent a ping within its expected interval.\n\nLast ping: ${payload.monitor.lastPingAt ? formatTimestamp(payload.monitor.lastPingAt) : 'never'}\nDown since: ${formatTimestamp(payload.incident.startedAt)}\n\nCheck your dashboard: ${dashboardUrl}`
-      : `Monitor "${payload.monitor.name}" has recovered after ${payload.incident.duration} of downtime.\n\nCheck your dashboard: ${dashboardUrl}`;
+  const overlapInfo = isOverlap
+    ? `A new run started but the previous run${payload.monitor.lastStartAt ? ` (started at ${formatTimestamp(payload.monitor.lastStartAt)})` : ''} has not finished yet. This may indicate a race condition.`
+    : '';
+
+  const text = isOverlap
+    ? `Monitor "${payload.monitor.name}" has overlapping runs.\n\n${overlapInfo}\n\nCheck your dashboard: ${dashboardUrl}`
+    : isSlow
+      ? `Monitor "${payload.monitor.name}" exceeded its max duration.\n\n${slowInfo}\n\nCheck your dashboard: ${dashboardUrl}`
+      : isDown
+        ? `Monitor "${payload.monitor.name}" has not sent a ping within its expected interval.\n\nLast ping: ${payload.monitor.lastPingAt ? formatTimestamp(payload.monitor.lastPingAt) : 'never'}\nDown since: ${formatTimestamp(payload.incident.startedAt)}\n\nCheck your dashboard: ${dashboardUrl}`
+        : `Monitor "${payload.monitor.name}" has recovered after ${payload.incident.duration} of downtime.\n\nCheck your dashboard: ${dashboardUrl}`;
 
   const html = alertEmail(payload, dashboardUrl);
 
@@ -191,13 +210,36 @@ async function sendEmail(to: string, payload: AlertEvent) {
 function alertEmail(payload: AlertEvent, dashboardUrl: string): string {
   const isSlow = payload.event === 'monitor.slow';
   const isDown = payload.event === 'monitor.down';
+  const isOverlap = payload.event === 'monitor.overlap';
+  const isNegative = isDown || isSlow || isOverlap;
 
-  const statusColor = isDown || isSlow ? '#ef4444' : '#22c55e';
-  const statusLabel = isSlow ? 'SLOW' : isDown ? 'DOWN' : 'RECOVERED';
-  const statusBg = isDown || isSlow ? '#fef2f2' : '#f0fdf4';
+  const statusColor = isOverlap
+    ? '#f59e0b'
+    : isNegative
+      ? '#ef4444'
+      : '#22c55e';
+  const statusLabel = isOverlap
+    ? 'OVERLAP'
+    : isSlow
+      ? 'SLOW'
+      : isDown
+        ? 'DOWN'
+        : 'RECOVERED';
+  const statusBg = isOverlap ? '#fffbeb' : isNegative ? '#fef2f2' : '#f0fdf4';
 
   let details: string;
-  if (isSlow) {
+  if (isOverlap) {
+    details = `
+          <tr><td style="padding:8px 0;font-size:14px;color:#52525b;border-bottom:1px solid #f4f4f5;">
+            <strong style="color:#18181b;">Previous run started</strong><br>${payload.monitor.lastStartAt ? formatTimestamp(payload.monitor.lastStartAt) : 'Unknown'}
+          </td></tr>
+          <tr><td style="padding:8px 0;font-size:14px;color:#52525b;">
+            <strong style="color:#18181b;">New run started</strong><br>${formatTimestamp(payload.incident.startedAt)}
+          </td></tr>
+          <tr><td style="padding:8px 0;font-size:14px;color:#52525b;">
+            A new run started before the previous one finished. This may indicate a race condition.
+          </td></tr>`;
+  } else if (isSlow) {
     const actualDuration =
       payload.monitor.lastPingDuration !== undefined
         ? formatDurationMs(payload.monitor.lastPingDuration)
@@ -298,17 +340,22 @@ function alertEmail(payload: AlertEvent, dashboardUrl: string): string {
 async function sendSlackWebhook(webhookUrl: string, payload: AlertEvent) {
   const isSlow = payload.event === 'monitor.slow';
   const isDown = payload.event === 'monitor.down';
-  const isAlert = isDown || isSlow;
-  const color = isAlert ? '#ef4444' : '#22c55e';
+  const isOverlap = payload.event === 'monitor.overlap';
+  const isNegative = isDown || isSlow || isOverlap;
+  const color = isOverlap ? '#f59e0b' : isNegative ? '#ef4444' : '#22c55e';
 
-  const title = isSlow
-    ? `[SLOW] ${payload.monitor.name}`
-    : isDown
-      ? `[DOWN] ${payload.monitor.name}`
-      : `[RECOVERED] ${payload.monitor.name}`;
+  const title = isOverlap
+    ? `[OVERLAP] ${payload.monitor.name}`
+    : isSlow
+      ? `[SLOW] ${payload.monitor.name}`
+      : isDown
+        ? `[DOWN] ${payload.monitor.name}`
+        : `[RECOVERED] ${payload.monitor.name}`;
 
   let text: string;
-  if (
+  if (isOverlap) {
+    text = `A new run started but the previous run${payload.monitor.lastStartAt ? ` (started ${formatTimestamp(payload.monitor.lastStartAt)})` : ''} has not finished yet.`;
+  } else if (
     isSlow &&
     payload.monitor.lastPingDuration !== undefined &&
     payload.monitor.maxDuration !== undefined
@@ -352,10 +399,13 @@ async function sendSlackWebhook(webhookUrl: string, payload: AlertEvent) {
 async function sendDiscordWebhook(webhookUrl: string, payload: AlertEvent) {
   const isSlow = payload.event === 'monitor.slow';
   const isDown = payload.event === 'monitor.down';
-  const isAlert = isDown || isSlow;
+  const isOverlap = payload.event === 'monitor.overlap';
+  const isNegative = isDown || isSlow || isOverlap;
 
   let description: string;
-  if (
+  if (isOverlap) {
+    description = `A new run started but the previous run${payload.monitor.lastStartAt ? ` (started ${formatTimestamp(payload.monitor.lastStartAt)})` : ''} has not finished yet.`;
+  } else if (
     isSlow &&
     payload.monitor.lastPingDuration !== undefined &&
     payload.monitor.maxDuration !== undefined
@@ -379,13 +429,15 @@ async function sendDiscordWebhook(webhookUrl: string, payload: AlertEvent) {
     body: JSON.stringify({
       embeds: [
         {
-          title: isSlow
-            ? `[SLOW] ${payload.monitor.name}`
-            : isDown
-              ? `[DOWN] ${payload.monitor.name}`
-              : `[RECOVERED] ${payload.monitor.name}`,
+          title: isOverlap
+            ? `[OVERLAP] ${payload.monitor.name}`
+            : isSlow
+              ? `[SLOW] ${payload.monitor.name}`
+              : isDown
+                ? `[DOWN] ${payload.monitor.name}`
+                : `[RECOVERED] ${payload.monitor.name}`,
           description,
-          color: isAlert ? 0xef4444 : 0x22c55e,
+          color: isOverlap ? 0xf59e0b : isNegative ? 0xef4444 : 0x22c55e,
           timestamp: payload.timestamp,
           footer: { text: 'PulseMon' },
         },

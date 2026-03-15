@@ -25,5 +25,7 @@ clawhub install pulsemon
 - **Delete monitors** — "delete the data-sync monitor"
 - **Pause/resume** — "pause nightly-backup", "resume nightly-backup"
 - **View history** — "show recent pings for nightly-backup", "any incidents today?"
+- **Set duration limits** — "set max duration on etl-pipeline to 5 minutes"
+- **Send pings** — "ping nightly-backup with status start", "ping nightly-backup with body 'processed 500 rows'"
 
 All through natural language via your OpenClaw agent.

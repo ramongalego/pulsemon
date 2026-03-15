@@ -456,6 +456,52 @@ curl -fsS --retry 3 "${BASE_URL}/api/ping/etl-pipeline?duration=$DURATION"`}</co
         </div>
       </Section>
 
+      {/* Start Signal & Overlap Detection */}
+      <Section
+        dashboard={isDashboard}
+        title="Start Signal &amp; Overlap Detection"
+        id="start-signal"
+        description="Detect when a job starts a new run before the previous one finishes."
+      >
+        <div className="space-y-4">
+          <p className="text-muted-foreground text-sm">
+            Send a{' '}
+            <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
+              ?status=start
+            </code>{' '}
+            ping when your job begins. PulseMon tracks whether the job is
+            currently running. If a second start ping arrives before a success
+            or fail ping, PulseMon fires an{' '}
+            <code className="bg-muted rounded px-1.5 py-0.5 text-xs">
+              [OVERLAP]
+            </code>{' '}
+            alert.
+          </p>
+
+          <div>
+            <h4 className="mb-2 text-sm font-semibold">Example usage</h4>
+            <pre className="bg-muted overflow-x-auto rounded-lg p-4 text-sm">
+              <code>{`#!/bin/bash
+set -e
+
+# Signal start
+curl -fsS ${BASE_URL}/api/ping/nightly-backup?status=start
+
+# Run the job
+/usr/local/bin/backup.sh
+
+# Signal completion
+curl -fsS ${BASE_URL}/api/ping/nightly-backup`}</code>
+            </pre>
+          </div>
+
+          <p className="text-muted-foreground text-sm">
+            Start pings do <strong>not</strong> reset the deadline. Only success
+            pings reset the deadline and mark the monitor as up.
+          </p>
+        </div>
+      </Section>
+
       {/* Rate Limiting */}
       <Section dashboard={isDashboard} title="Rate Limiting" id="rate-limiting">
         <div className="space-y-4">

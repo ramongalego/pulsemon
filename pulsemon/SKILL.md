@@ -69,6 +69,7 @@ Body:
 - **expectedInterval**: Seconds between expected pings (required, minimum 10, maximum 2592000)
 - **gracePeriod**: Extra seconds before alerting (optional, 0-86400, defaults to a sensible value based on the interval)
 - **tags**: Array of string tags for organisation (optional)
+- **maxDuration**: Max allowed run time in milliseconds (optional, null to disable). Alerts if a ping reports a duration exceeding this threshold.
 
 ### Update a monitor
 
@@ -85,6 +86,7 @@ Body: any of these fields (at least one required):
 - **gracePeriod**: number (0-86400)
 - **isPaused**: boolean
 - **tags**: array of strings
+- **maxDuration**: number or null (milliseconds)
 
 ### Delete a monitor
 
@@ -105,6 +107,32 @@ Body: any of these fields (at least one required):
 ### List incidents for a monitor
 
 `GET /api/v1/monitors/{id}/incidents?limit=20&offset=0`
+
+### Ping a monitor
+
+Pings are sent directly to the ping endpoint (no API key needed):
+
+`GET https://pulsemon.dev/api/ping/{slug}`
+
+Optional query params:
+- **status**: "success" (default), "fail", or "start"
+- **duration**: Job duration in milliseconds
+
+`POST https://pulsemon.dev/api/ping/{slug}` with JSON body:
+
+```json
+{
+  "status": "success",
+  "duration": 1234,
+  "body": "Processed 500 records"
+}
+```
+
+- **status=start**: Signals a job has begun. Enables overlap detection. Does not reset the deadline.
+- **status=success**: Signals the job completed. Resets the deadline.
+- **status=fail**: Records a failure. Does not reset the deadline.
+- **body**: Job output (up to 10 KB). Included in alert notifications.
+- **duration**: Job run time in ms. Checked against maxDuration threshold if set.
 
 ## Response Format
 
