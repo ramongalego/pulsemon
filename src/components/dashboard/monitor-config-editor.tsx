@@ -39,7 +39,6 @@ export function MonitorConfigEditor({ monitor }: { monitor: Monitor }) {
   const [name, setName] = useState(monitor.name);
   const [interval, setInterval] = useState(String(monitor.expectedInterval));
   const [gracePeriod, setGracePeriod] = useState(String(monitor.gracePeriod));
-  const [tags, setTags] = useState(monitor.tags.join(', '));
   const [maxDuration, setMaxDuration] = useState(
     monitor.maxDuration ? String(monitor.maxDuration / 1000) : '',
   );
@@ -65,13 +64,6 @@ export function MonitorConfigEditor({ monitor }: { monitor: Monitor }) {
         body.expectedInterval = Number(interval);
       if (Number(gracePeriod) !== monitor.gracePeriod)
         body.gracePeriod = Number(gracePeriod);
-
-      const newTags = tags
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean);
-      if (JSON.stringify(newTags) !== JSON.stringify(monitor.tags))
-        body.tags = newTags;
 
       const newMaxDuration = maxDuration ? Number(maxDuration) * 1000 : null;
       if (newMaxDuration !== (monitor.maxDuration ?? null))
@@ -127,7 +119,7 @@ export function MonitorConfigEditor({ monitor }: { monitor: Monitor }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-[1fr_auto_auto]">
         <div className="space-y-2">
           <Label htmlFor="config-name">Name</Label>
           <Input
@@ -156,6 +148,7 @@ export function MonitorConfigEditor({ monitor }: { monitor: Monitor }) {
             <div className="flex gap-2">
               <Input
                 id="config-interval"
+                className="w-32"
                 type="number"
                 min={10}
                 value={interval}
@@ -172,6 +165,7 @@ export function MonitorConfigEditor({ monitor }: { monitor: Monitor }) {
           <div className="flex gap-2">
             <Input
               id="config-grace"
+              className="w-32"
               type="number"
               min={0}
               value={gracePeriod}
@@ -197,15 +191,6 @@ export function MonitorConfigEditor({ monitor }: { monitor: Monitor }) {
             </p>
           )}
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="config-tags">Tags (comma-separated)</Label>
-          <Input
-            id="config-tags"
-            placeholder="production, backup, critical"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-          />
-        </div>
       </div>
       <div>
         <button
@@ -229,10 +214,11 @@ export function MonitorConfigEditor({ monitor }: { monitor: Monitor }) {
               <div className="flex gap-2">
                 <Input
                   id="config-max-duration"
+                  className="w-32"
                   type="number"
                   min={1}
                   value={maxDuration}
-                  placeholder="e.g. 300 for 5 minutes"
+                  placeholder="e.g. 300"
                   onChange={(e) => setMaxDuration(e.target.value)}
                 />
                 <span className="text-muted-foreground flex items-center text-sm">
