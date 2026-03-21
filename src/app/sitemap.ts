@@ -21,17 +21,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  const publicPages = await db
-    .select({ slug: statusPages.slug, createdAt: statusPages.createdAt })
-    .from(statusPages)
-    .where(eq(statusPages.isPublic, true));
+  let statusPageEntries: MetadataRoute.Sitemap = [];
+  try {
+    const publicPages = await db
+      .select({ slug: statusPages.slug, createdAt: statusPages.createdAt })
+      .from(statusPages)
+      .where(eq(statusPages.isPublic, true));
 
-  const statusPageEntries = publicPages.map((page) => ({
-    url: `${BASE_URL}/status/${page.slug}`,
-    lastModified: page.createdAt,
-    changeFrequency: 'daily' as const,
-    priority: 0.5,
-  }));
+    statusPageEntries = publicPages.map((page) => ({
+      url: `${BASE_URL}/status/${page.slug}`,
+      lastModified: page.createdAt,
+      changeFrequency: 'daily' as const,
+      priority: 0.5,
+    }));
+  } catch {
+    // DB may be unavailable during build
+  }
 
   return [...staticPages, ...blogPosts, ...statusPageEntries];
 }
