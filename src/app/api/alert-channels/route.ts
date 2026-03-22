@@ -7,6 +7,7 @@ import { createAlertChannelSchema } from '@/lib/validations/alert-channel';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
 import { checkPlanLimit } from '@/lib/plan-enforcement';
 import type { AlertChannelType } from '@/types';
+import { checkMutationRateLimit } from '@/lib/rate-limit';
 
 export async function GET() {
   const session = await auth();
@@ -40,6 +41,9 @@ export async function POST(req: NextRequest) {
       { status: 401 },
     );
   }
+
+  const limited = await checkMutationRateLimit(session.user.id);
+  if (limited) return limited;
 
   try {
     const body = await req.json();

@@ -6,6 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { z } from 'zod';
 import { nanoid } from 'nanoid';
 import { createHash } from 'crypto';
+import { checkMutationRateLimit } from '@/lib/rate-limit';
 
 function hashKey(key: string): string {
   return createHash('sha256').update(key).digest('hex');
@@ -53,6 +54,9 @@ export async function POST(req: NextRequest) {
       { status: 401 },
     );
   }
+
+  const limited = await checkMutationRateLimit(session.user.id);
+  if (limited) return limited;
 
   try {
     const body = await req.json();
@@ -116,6 +120,9 @@ export async function DELETE(req: NextRequest) {
       { status: 401 },
     );
   }
+
+  const limited = await checkMutationRateLimit(session.user.id);
+  if (limited) return limited;
 
   const url = new URL(req.url);
   const keyId = url.searchParams.get('id');

@@ -6,6 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { redis, redisKeys } from '@/lib/redis';
 import { updateMonitorSchema } from '@/lib/validations/monitor';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
+import { checkMutationRateLimit } from '@/lib/rate-limit';
 
 export async function PATCH(
   req: NextRequest,
@@ -23,6 +24,9 @@ export async function PATCH(
   }
 
   const { id } = await params;
+
+  const limited = await checkMutationRateLimit(session.user.id);
+  if (limited) return limited;
 
   try {
     const body = await req.json();
@@ -80,7 +84,7 @@ export async function PATCH(
     const [updated] = await db
       .update(monitors)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(eq(monitors.id, id))
+      .where(and(eq(monitors.id, id), eq(monitors.userId, session.user.id)))
       .returning();
 
     // Issue #3: Invalidate Redis slug cache so changes (especially isPaused) take effect immediately
@@ -115,6 +119,9 @@ export async function DELETE(
 
   const { id } = await params;
 
+  const limited = await checkMutationRateLimit(session.user.id);
+  if (limited) return limited;
+
   // Verify ownership and get slug for cache cleanup
   const [existing] = await db
     .select({ id: monitors.id, slug: monitors.slug })
@@ -132,7 +139,9 @@ export async function DELETE(
     );
   }
 
-  await db.delete(monitors).where(eq(monitors.id, id));
+  await db
+    .delete(monitors)
+    .where(and(eq(monitors.id, id), eq(monitors.userId, session.user.id)));
 
   // Clean up Redis cache
   await redis.del(redisKeys.slugToMonitor(existing.slug));

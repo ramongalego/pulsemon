@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { alertChannels } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { updateAlertChannelSchema } from '@/lib/validations/alert-channel';
+import { checkMutationRateLimit } from '@/lib/rate-limit';
 
 export async function PATCH(
   req: NextRequest,
@@ -21,6 +22,9 @@ export async function PATCH(
   }
 
   const { id } = await params;
+
+  const limited = await checkMutationRateLimit(session.user.id);
+  if (limited) return limited;
 
   try {
     const body = await req.json();
@@ -103,6 +107,9 @@ export async function DELETE(
   }
 
   const { id } = await params;
+
+  const limited = await checkMutationRateLimit(session.user.id);
+  if (limited) return limited;
 
   await db
     .delete(alertChannels)

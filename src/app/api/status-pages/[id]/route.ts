@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { statusPages } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { updateStatusPageSchema } from '@/lib/validations/status-page';
+import { checkMutationRateLimit } from '@/lib/rate-limit';
 
 export async function GET(
   _req: NextRequest,
@@ -57,6 +58,9 @@ export async function PATCH(
   }
 
   const { id } = await params;
+
+  const limited = await checkMutationRateLimit(session.user.id);
+  if (limited) return limited;
 
   try {
     const body = await req.json();
@@ -119,7 +123,9 @@ export async function PATCH(
     const [updated] = await db
       .update(statusPages)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(eq(statusPages.id, id))
+      .where(
+        and(eq(statusPages.id, id), eq(statusPages.userId, session.user.id)),
+      )
       .returning();
 
     return NextResponse.json({ data: updated, error: null });
@@ -154,6 +160,9 @@ export async function DELETE(
 
   const { id } = await params;
 
+  const limited = await checkMutationRateLimit(session.user.id);
+  if (limited) return limited;
+
   const [existing] = await db
     .select({ id: statusPages.id })
     .from(statusPages)
@@ -170,7 +179,11 @@ export async function DELETE(
     );
   }
 
-  await db.delete(statusPages).where(eq(statusPages.id, id));
+  await db
+    .delete(statusPages)
+    .where(
+      and(eq(statusPages.id, id), eq(statusPages.userId, session.user.id)),
+    );
 
   return NextResponse.json({ data: { deleted: true }, error: null });
 }

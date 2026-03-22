@@ -6,6 +6,7 @@ import { eq, sql } from 'drizzle-orm';
 import { createStatusPageSchema } from '@/lib/validations/status-page';
 import { getUserPlan } from '@/lib/plan-limits';
 import { checkPlanLimit } from '@/lib/plan-enforcement';
+import { checkMutationRateLimit } from '@/lib/rate-limit';
 
 export async function GET() {
   const session = await auth();
@@ -55,6 +56,9 @@ export async function POST(req: NextRequest) {
       { status: 401 },
     );
   }
+
+  const limited = await checkMutationRateLimit(session.user.id);
+  if (limited) return limited;
 
   try {
     const body = await req.json();

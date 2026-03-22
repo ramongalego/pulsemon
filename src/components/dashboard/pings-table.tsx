@@ -42,36 +42,75 @@ function PingBody({ body }: { body: string }) {
   );
 }
 
+type TokenType = 'key' | 'string' | 'boolean' | 'number' | 'plain' | 'colon';
+
+interface Token {
+  type: TokenType;
+  value: string;
+}
+
+const VALUE_RE =
+  /("(?:[^"\\]|\\.)*")|(\b(?:true|false|null)\b)|(\b-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)/g;
+
+function tokenizeValues(text: string): Token[] {
+  const tokens: Token[] = [];
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+
+  VALUE_RE.lastIndex = 0;
+  while ((m = VALUE_RE.exec(text)) !== null) {
+    if (m.index > lastIndex) {
+      tokens.push({ type: 'plain', value: text.slice(lastIndex, m.index) });
+    }
+    if (m[1]) tokens.push({ type: 'string', value: m[0] });
+    else if (m[2]) tokens.push({ type: 'boolean', value: m[0] });
+    else if (m[3]) tokens.push({ type: 'number', value: m[0] });
+    lastIndex = VALUE_RE.lastIndex;
+  }
+  if (lastIndex < text.length) {
+    tokens.push({ type: 'plain', value: text.slice(lastIndex) });
+  }
+  return tokens;
+}
+
+const TOKEN_CLASS: Record<TokenType, string | null> = {
+  key: 'text-blue-600 dark:text-blue-400',
+  string: 'text-green-600 dark:text-green-400',
+  boolean: 'text-purple-600 dark:text-purple-400',
+  number: 'text-orange-600 dark:text-orange-400',
+  plain: null,
+  colon: null,
+};
+
 function JsonHighlighted({ text }: { text: string }) {
-  // Simple JSON syntax highlighting via regex
-  const parts = text.split(/("(?:[^"\\]|\\.)*")\s*:/g);
+  const tokens = useMemo(() => {
+    const result: Token[] = [];
+    // Split on JSON keys: quoted strings followed by a colon
+    const parts = text.split(/("(?:[^"\\]|\\.)*")\s*:/g);
+
+    for (let i = 0; i < parts.length; i++) {
+      if (i % 2 === 1) {
+        // Odd indices are captured JSON keys
+        result.push({ type: 'key', value: parts[i] });
+        result.push({ type: 'colon', value: ':' });
+      } else {
+        // Even indices: highlight string values, numbers, booleans, null
+        result.push(...tokenizeValues(parts[i]));
+      }
+    }
+    return result;
+  }, [text]);
 
   return (
     <>
-      {parts.map((part, i) => {
-        // Odd indices are captured JSON keys
-        if (i % 2 === 1) {
-          return (
-            <span key={i}>
-              <span className="text-blue-600 dark:text-blue-400">{part}</span>:
-            </span>
-          );
-        }
-        // Highlight string values, numbers, booleans, null in the rest
-        const highlighted = part.replace(
-          /("(?:[^"\\]|\\.)*")|(\b(?:true|false|null)\b)|(\b-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)/g,
-          (match, str, bool, num) => {
-            if (str)
-              return `<span class="text-green-600 dark:text-green-400">${str}</span>`;
-            if (bool)
-              return `<span class="text-purple-600 dark:text-purple-400">${bool}</span>`;
-            if (num)
-              return `<span class="text-orange-600 dark:text-orange-400">${num}</span>`;
-            return match;
-          },
-        );
-        return (
-          <span key={i} dangerouslySetInnerHTML={{ __html: highlighted }} />
+      {tokens.map((token, i) => {
+        const cls = TOKEN_CLASS[token.type];
+        return cls ? (
+          <span key={i} className={cls}>
+            {token.value}
+          </span>
+        ) : (
+          <span key={i}>{token.value}</span>
         );
       })}
     </>

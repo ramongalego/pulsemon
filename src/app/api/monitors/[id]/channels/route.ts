@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { monitors, monitorAlertChannels } from '@/lib/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { monitors, monitorAlertChannels, alertChannels } from '@/lib/db/schema';
+import { eq, and, inArray } from 'drizzle-orm';
 import { z } from 'zod';
 
 export async function GET(
@@ -103,6 +103,33 @@ export async function PUT(
         },
         { status: 400 },
       );
+    }
+
+    // Verify all channels belong to the authenticated user
+    if (parsed.data.channelIds.length > 0) {
+      const ownedChannels = await db
+        .select({ id: alertChannels.id })
+        .from(alertChannels)
+        .where(
+          and(
+            inArray(alertChannels.id, parsed.data.channelIds),
+            eq(alertChannels.userId, session.user.id),
+          ),
+        );
+
+      if (ownedChannels.length !== parsed.data.channelIds.length) {
+        return NextResponse.json(
+          {
+            data: null,
+            error: {
+              code: 'FORBIDDEN',
+              message:
+                'One or more alert channels do not belong to your account',
+            },
+          },
+          { status: 403 },
+        );
+      }
     }
 
     // Replace all links: delete existing, insert new
