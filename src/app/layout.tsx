@@ -55,11 +55,6 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         <meta name="saashub-verification" content="v9fwb5wcjab5" />
-        <script
-          defer
-          src="https://cloud.umami.is/script.js"
-          data-website-id="335f6303-1529-4aeb-ab81-a17c12df267c"
-        />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <Providers>
