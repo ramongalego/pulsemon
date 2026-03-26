@@ -10,7 +10,7 @@ import { PricingCards } from '@/components/shared/pricing-toggle';
 export const metadata: Metadata = {
   title: 'Pricing',
   description:
-    'Simple, transparent pricing for cron job monitoring. Start free with 30 monitors.',
+    'Pricing for cron job monitoring. Start free with 30 monitors.',
 };
 
 const comparisonRows = [
@@ -72,7 +72,7 @@ export default function PricingPage() {
     <div className="mx-auto max-w-6xl px-4 py-16 md:py-24">
       <div className="mx-auto max-w-3xl text-center">
         <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-          Simple, transparent pricing
+          Pricing
         </h1>
         <p className="text-muted-foreground mt-4 text-lg">
           Start free. Upgrade when you need faster checks, more monitors, or

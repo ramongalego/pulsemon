@@ -440,7 +440,7 @@ export default function LandingPage() {
       <section id="pricing" className="py-20 md:py-28">
         <div className="mx-auto max-w-6xl px-4">
           <h2 className="text-center text-3xl font-bold tracking-tight md:text-4xl">
-            Simple, transparent pricing
+            Pricing
           </h2>
           <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-center">
             Start free. Upgrade when you need faster checks, more monitors, or
