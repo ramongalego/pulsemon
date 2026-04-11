@@ -9,6 +9,8 @@ export const redis = new Redis({
 export const redisKeys = {
   lastPing: (monitorId: string) => `ping:${monitorId}:last`,
   slugToMonitor: (slug: string) => `slug:${slug}`,
-  pingRateLimit: (slug: string) => `rl:${slug}`,
+  // Rate-limit bucket is scoped per status so a legitimate start→success
+  // lifecycle from a single job doesn't rate-limit itself.
+  pingRateLimit: (slug: string, status: string) => `rl:${slug}:${status}`,
   lifetimeCount: 'lifetime:count',
 } as const;

@@ -512,8 +512,13 @@ curl -fsS ${BASE_URL}/api/ping/nightly-backup`}</code>
         <div className="space-y-4">
           <p className="text-muted-foreground text-sm">
             The ping endpoint enforces a rate limit of{' '}
-            <strong>1 request per second per slug</strong>. If you exceed this
-            limit, the endpoint returns a{' '}
+            <strong>1 request per second per slug per status</strong>. The
+            bucket is separate for{' '}
+            <code className="bg-muted rounded px-1 text-xs">start</code>,{' '}
+            <code className="bg-muted rounded px-1 text-xs">success</code>, and{' '}
+            <code className="bg-muted rounded px-1 text-xs">fail</code> pings,
+            so a normal start → success lifecycle never rate-limits itself. If
+            you exceed the limit, the endpoint returns a{' '}
             <code className="bg-muted rounded px-1.5 py-0.5 text-xs">429</code>{' '}
             status code.
           </p>

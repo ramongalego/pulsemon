@@ -37,8 +37,17 @@ async function handlePing(
 ) {
   const now = Date.now();
 
-  // Rate limit: max 1 ping per second per slug
-  const rlKey = redisKeys.pingRateLimit(monitorSlug);
+  // Resolve the rate-limit bucket's status from the query string. A POST body
+  // can override the recorded status later, but the bucket is keyed by query
+  // param so the common start→success lifecycle doesn't rate-limit itself.
+  // 'success' is the default, matching the handler's initial pingStatus below.
+  const url = new URL(req.url);
+  const qStatus = url.searchParams.get('status');
+  const rlStatus: 'start' | 'fail' | 'success' =
+    qStatus === 'start' || qStatus === 'fail' ? qStatus : 'success';
+
+  // Rate limit: max 1 ping per second per slug per status
+  const rlKey = redisKeys.pingRateLimit(monitorSlug, rlStatus);
   const allowed = await redis.set(rlKey, 1, { nx: true, ex: 1 });
   if (!allowed) {
     return NextResponse.json(
@@ -81,16 +90,11 @@ async function handlePing(
 
   // From here on, monitor exists. Errors return 200 to not break cron jobs.
   try {
-    const url = new URL(req.url);
-    let pingStatus: 'success' | 'fail' | 'start' = 'success';
+    let pingStatus: 'success' | 'fail' | 'start' = rlStatus;
     let duration: number | null = null;
     let body: string | null = null;
 
-    const qStatus = url.searchParams.get('status');
     const qDuration = url.searchParams.get('duration');
-
-    if (qStatus === 'fail') pingStatus = 'fail';
-    if (qStatus === 'start') pingStatus = 'start';
     if (qDuration) duration = parseInt(qDuration, 10) || null;
 
     if (req.method === 'POST') {
