@@ -71,11 +71,11 @@ function magicLinkEmail(url: string): string {
 }
 
 if (process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET) {
-  providers.push(GitHub);
+  providers.push(GitHub({ allowDangerousEmailAccountLinking: true }));
 }
 
 if (process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET) {
-  providers.push(Google);
+  providers.push(Google({ allowDangerousEmailAccountLinking: true }));
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({

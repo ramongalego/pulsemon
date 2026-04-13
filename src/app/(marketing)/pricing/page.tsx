@@ -9,8 +9,7 @@ import { PricingCards } from '@/components/shared/pricing-toggle';
 
 export const metadata: Metadata = {
   title: 'Pricing',
-  description:
-    'Pricing for cron job monitoring. Start free with 30 monitors.',
+  description: 'Pricing for cron job monitoring. Start free with 30 monitors.',
 };
 
 const comparisonRows = [
