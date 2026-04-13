@@ -23,7 +23,7 @@ const comparisonRows = [
   },
   { feature: 'Alert channels', free: '2', starter: '5', pro: 'Unlimited' },
   { feature: 'Status pages', free: '1', starter: '2', pro: '5' },
-  { feature: 'Custom webhooks', free: 'No', starter: 'Yes', pro: 'Yes' },
+  { feature: 'Custom webhooks', free: 'No', starter: 'No', pro: 'Yes' },
   { feature: 'API access', free: 'Yes', starter: 'Yes', pro: 'Yes' },
   {
     feature: 'Support',

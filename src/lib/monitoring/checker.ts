@@ -183,19 +183,21 @@ export async function checkMonitors(): Promise<CheckResult[]> {
         const incident = openIncident[0];
         const resolvedIncident = { ...incident, resolvedAt: new Date(now) };
 
-        // Alert first, resolve second — if alert fails, leave open for retry
+        // Best-effort alert — resolve incident and update status regardless,
+        // so a transient alert failure doesn't orphan the incident forever.
         try {
           await dispatchAlerts(monitor, 'monitor.up', resolvedIncident);
-          await db
-            .update(incidents)
-            .set({ resolvedAt: new Date(now) })
-            .where(eq(incidents.id, incident.id));
         } catch (err) {
           console.error(
-            `Recovery alert failed for incident ${incident.id}, leaving open for retry:`,
+            `Recovery alert failed for incident ${incident.id}:`,
             err,
           );
         }
+
+        await db
+          .update(incidents)
+          .set({ resolvedAt: new Date(now) })
+          .where(eq(incidents.id, incident.id));
       }
 
       await db
@@ -292,16 +294,17 @@ export async function checkMonitors(): Promise<CheckResult[]> {
           await dispatchAlerts(monitor, 'monitor.up', resolvedIncident, {
             lastPingDuration: latestPing.duration,
           });
-          await db
-            .update(incidents)
-            .set({ resolvedAt: new Date(now) })
-            .where(eq(incidents.id, openDurationIncident.id));
         } catch (err) {
           console.error(
             `Duration recovery alert failed for incident ${openDurationIncident.id}:`,
             err,
           );
         }
+
+        await db
+          .update(incidents)
+          .set({ resolvedAt: new Date(now) })
+          .where(eq(incidents.id, openDurationIncident.id));
 
         results.push({
           monitorId: monitor.id,
