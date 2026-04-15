@@ -108,7 +108,7 @@ export default function MarketingLayout({
             </div>
           </div>
           <div className="text-muted-foreground mt-8 border-t pt-8 text-center text-sm">
-            Built for developers by a developer.
+            Built for developers by a developer
           </div>
         </div>
       </footer>

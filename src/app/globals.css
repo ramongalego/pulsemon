@@ -126,3 +126,28 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes heroGlow {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes stepPing {
+  0% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  33.33% {
+    opacity: 0;
+    transform: scale(2);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2);
+  }
+}
