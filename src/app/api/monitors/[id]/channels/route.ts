@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { monitors, monitorAlertChannels, alertChannels } from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { z } from 'zod';
+import { checkMutationRateLimit } from '@/lib/rate-limit';
 
 export async function GET(
   _req: NextRequest,
@@ -70,6 +71,9 @@ export async function PUT(
   }
 
   const { id } = await params;
+
+  const limited = await checkMutationRateLimit(session.user.id);
+  if (limited) return limited;
 
   // Verify ownership
   const [monitor] = await db
@@ -147,7 +151,8 @@ export async function PUT(
     }
 
     return NextResponse.json({ data: parsed.data.channelIds, error: null });
-  } catch {
+  } catch (err) {
+    console.error('Update monitor channel links failed:', err);
     return NextResponse.json(
       {
         data: null,

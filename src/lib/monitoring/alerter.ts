@@ -114,15 +114,18 @@ export async function dispatchAlerts(
     channels = channels.filter((c) => c.isDefault);
   }
 
-  // Fetch the most recent ping body
-  const [lastPing] = await db
-    .select({ body: pings.body })
-    .from(pings)
-    .where(eq(pings.monitorId, monitor.id))
-    .orderBy(desc(pings.receivedAt))
-    .limit(1);
-
-  const lastPingBody = lastPing?.body || null;
+  // Only negative-event alerts surface the last ping body — skip the query
+  // for monitor.up to keep recovery alerts cheap.
+  let lastPingBody: string | null = null;
+  if (event !== 'monitor.up') {
+    const [lastPing] = await db
+      .select({ body: pings.body })
+      .from(pings)
+      .where(eq(pings.monitorId, monitor.id))
+      .orderBy(desc(pings.receivedAt))
+      .limit(1);
+    lastPingBody = lastPing?.body ?? null;
+  }
 
   const payload = buildAlertPayload(monitor, event, incident, lastPingBody);
 

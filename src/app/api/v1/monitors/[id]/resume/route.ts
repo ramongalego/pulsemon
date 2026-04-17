@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { monitors } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { redis, redisKeys } from '@/lib/redis';
+import { checkApiKeyRateLimit } from '@/lib/rate-limit';
 
 export async function POST(
   req: NextRequest,
@@ -22,6 +23,9 @@ export async function POST(
       { status: 401 },
     );
   }
+
+  const limited = await checkApiKeyRateLimit(apiKey.userId);
+  if (limited) return limited;
 
   const { id } = await params;
 
@@ -44,7 +48,7 @@ export async function POST(
   const [updated] = await db
     .update(monitors)
     .set({ isPaused: false, updatedAt: new Date() })
-    .where(eq(monitors.id, id))
+    .where(and(eq(monitors.id, id), eq(monitors.userId, apiKey.userId)))
     .returning();
 
   await redis.del(redisKeys.slugToMonitor(existing.slug));

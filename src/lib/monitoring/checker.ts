@@ -4,6 +4,20 @@ import { redis, redisKeys } from '@/lib/redis';
 import { eq, and, ne, isNull, desc } from 'drizzle-orm';
 import { dispatchAlerts } from './alerter';
 import { isMonitorLate, shouldSendReminder, isDurationExceeded } from './utils';
+import type { Monitor, Incident } from '@/lib/db/schema';
+
+async function maybeEscalate(
+  monitor: Monitor,
+  incident: Incident,
+  now: number,
+): Promise<void> {
+  if (!shouldSendReminder(incident.startedAt, incident.alertsSent, now)) return;
+  await dispatchAlerts(monitor, 'monitor.down', incident);
+  await db
+    .update(incidents)
+    .set({ alertsSent: incident.alertsSent + 1 })
+    .where(eq(incidents.id, incident.id));
+}
 
 export type CheckResult = {
   monitorId: string;
@@ -83,29 +97,7 @@ export async function checkMonitors(): Promise<CheckResult[]> {
         .limit(1);
 
       if (existingOpenIncident) {
-        // Incident already exists (e.g. from explicit_failure). Use escalation logic instead.
-        const shouldEscalate = shouldSendReminder(
-          existingOpenIncident.startedAt,
-          existingOpenIncident.alertsSent,
-          now,
-        );
-
-        if (shouldEscalate) {
-          await dispatchAlerts(monitor, 'monitor.down', existingOpenIncident);
-          await db
-            .update(incidents)
-            .set({ alertsSent: existingOpenIncident.alertsSent + 1 })
-            .where(eq(incidents.id, existingOpenIncident.id));
-        }
-
-        results.push({
-          monitorId: monitor.id,
-          monitorName: monitor.name,
-          slug: monitor.slug,
-          previousStatus: monitor.status,
-          newStatus: 'down',
-          action: 'went_down',
-        });
+        await maybeEscalate(monitor, existingOpenIncident, now);
       } else {
         const [incident] = await db
           .insert(incidents)
@@ -118,19 +110,19 @@ export async function checkMonitors(): Promise<CheckResult[]> {
           .returning();
 
         await dispatchAlerts(monitor, 'monitor.down', incident);
-
-        results.push({
-          monitorId: monitor.id,
-          monitorName: monitor.name,
-          slug: monitor.slug,
-          previousStatus: monitor.status,
-          newStatus: 'down',
-          action: 'went_down',
-        });
       }
+
+      results.push({
+        monitorId: monitor.id,
+        monitorName: monitor.name,
+        slug: monitor.slug,
+        previousStatus: monitor.status,
+        newStatus: 'down',
+        action: 'went_down',
+      });
     } else if (isLate && monitor.status === 'down') {
-      // Still down - check if we should send a reminder
-      const openIncident = await db
+      // Still down — escalate if we hit the next reminder interval
+      const [openIncident] = await db
         .select()
         .from(incidents)
         .where(
@@ -141,21 +133,8 @@ export async function checkMonitors(): Promise<CheckResult[]> {
         )
         .limit(1);
 
-      if (openIncident.length > 0) {
-        const incident = openIncident[0];
-        const shouldEscalate = shouldSendReminder(
-          incident.startedAt,
-          incident.alertsSent,
-          now,
-        );
-
-        if (shouldEscalate) {
-          await dispatchAlerts(monitor, 'monitor.down', incident);
-          await db
-            .update(incidents)
-            .set({ alertsSent: incident.alertsSent + 1 })
-            .where(eq(incidents.id, incident.id));
-        }
+      if (openIncident) {
+        await maybeEscalate(monitor, openIncident, now);
       }
 
       results.push({
@@ -168,7 +147,7 @@ export async function checkMonitors(): Promise<CheckResult[]> {
       });
     } else if (!isLate && monitor.status === 'down') {
       // Monitor recovered
-      const openIncident = await db
+      const [openIncident] = await db
         .select()
         .from(incidents)
         .where(
@@ -179,9 +158,11 @@ export async function checkMonitors(): Promise<CheckResult[]> {
         )
         .limit(1);
 
-      if (openIncident.length > 0) {
-        const incident = openIncident[0];
-        const resolvedIncident = { ...incident, resolvedAt: new Date(now) };
+      if (openIncident) {
+        const resolvedIncident = {
+          ...openIncident,
+          resolvedAt: new Date(now),
+        };
 
         // Best-effort alert — resolve incident and update status regardless,
         // so a transient alert failure doesn't orphan the incident forever.
@@ -189,21 +170,27 @@ export async function checkMonitors(): Promise<CheckResult[]> {
           await dispatchAlerts(monitor, 'monitor.up', resolvedIncident);
         } catch (err) {
           console.error(
-            `Recovery alert failed for incident ${incident.id}:`,
+            `Recovery alert failed for incident ${openIncident.id}:`,
             err,
           );
         }
 
+        await Promise.all([
+          db
+            .update(incidents)
+            .set({ resolvedAt: new Date(now) })
+            .where(eq(incidents.id, openIncident.id)),
+          db
+            .update(monitors)
+            .set({ status: 'up', updatedAt: new Date(now) })
+            .where(eq(monitors.id, monitor.id)),
+        ]);
+      } else {
         await db
-          .update(incidents)
-          .set({ resolvedAt: new Date(now) })
-          .where(eq(incidents.id, incident.id));
+          .update(monitors)
+          .set({ status: 'up', updatedAt: new Date(now) })
+          .where(eq(monitors.id, monitor.id));
       }
-
-      await db
-        .update(monitors)
-        .set({ status: 'up', updatedAt: new Date(now) })
-        .where(eq(monitors.id, monitor.id));
 
       results.push({
         monitorId: monitor.id,

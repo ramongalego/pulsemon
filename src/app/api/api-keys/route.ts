@@ -98,7 +98,8 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 },
     );
-  } catch {
+  } catch (err) {
+    console.error('Create API key failed:', err);
     return NextResponse.json(
       {
         data: null,

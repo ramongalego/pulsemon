@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { feedback } from '@/lib/db/schema';
 import { feedbackSchema } from '@/lib/validations/feedback';
+import { checkFeedbackRateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -15,6 +16,9 @@ export async function POST(req: NextRequest) {
       { status: 401 },
     );
   }
+
+  const limited = await checkFeedbackRateLimit(session.user.id);
+  if (limited) return limited;
 
   const body = await req.json();
   const parsed = feedbackSchema.safeParse(body);

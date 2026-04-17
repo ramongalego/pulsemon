@@ -1,8 +1,8 @@
 import { db } from '@/lib/db';
 import { monitors, alertChannels, statusPages } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
-import type { PlanLimits } from '@/types';
+import type { Plan, PlanLimits } from '@/types';
 
 export interface ResourceUsage {
   monitors: number;
@@ -16,34 +16,38 @@ export interface PlanLimitCheck {
   limit: number;
 }
 
+const COUNT_EXPR = sql<number>`cast(count(*) as int)`;
+
 export async function getUserUsage(userId: string): Promise<ResourceUsage> {
   const [monitorRows, channelRows, pageRows] = await Promise.all([
     db
-      .select({ id: monitors.id })
+      .select({ count: COUNT_EXPR })
       .from(monitors)
       .where(eq(monitors.userId, userId)),
     db
-      .select({ id: alertChannels.id })
+      .select({ count: COUNT_EXPR })
       .from(alertChannels)
       .where(eq(alertChannels.userId, userId)),
     db
-      .select({ id: statusPages.id })
+      .select({ count: COUNT_EXPR })
       .from(statusPages)
       .where(eq(statusPages.userId, userId)),
   ]);
 
   return {
-    monitors: monitorRows.length,
-    alertChannels: channelRows.length,
-    statusPages: pageRows.length,
+    monitors: monitorRows[0]?.count ?? 0,
+    alertChannels: channelRows[0]?.count ?? 0,
+    statusPages: pageRows[0]?.count ?? 0,
   };
 }
 
 export async function checkPlanLimit(
   userId: string,
   resource: 'monitors' | 'alertChannels' | 'statusPages',
+  knownPlan?: Plan,
 ): Promise<PlanLimitCheck> {
-  const plan = await getUserPlan(userId);
+  // Allow callers that already fetched the plan to skip the second lookup.
+  const plan = knownPlan ?? (await getUserPlan(userId));
   const limits = getPlanLimits(plan);
 
   const usage = await getResourceCount(userId, resource);
@@ -67,12 +71,12 @@ async function getResourceCount(
   } as const;
 
   const table = tableMap[resource];
-  const rows = await db
-    .select({ id: table.id })
+  const [row] = await db
+    .select({ count: COUNT_EXPR })
     .from(table)
     .where(eq(table.userId, userId));
 
-  return rows.length;
+  return row?.count ?? 0;
 }
 
 export function isOverLimit(usage: ResourceUsage, limits: PlanLimits): boolean {

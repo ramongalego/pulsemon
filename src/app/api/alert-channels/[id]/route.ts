@@ -73,11 +73,17 @@ export async function PATCH(
     const [updated] = await db
       .update(alertChannels)
       .set(updateFields)
-      .where(eq(alertChannels.id, id))
+      .where(
+        and(
+          eq(alertChannels.id, id),
+          eq(alertChannels.userId, session.user.id),
+        ),
+      )
       .returning();
 
     return NextResponse.json({ data: updated, error: null });
-  } catch {
+  } catch (err) {
+    console.error('Update alert channel failed:', err);
     return NextResponse.json(
       {
         data: null,

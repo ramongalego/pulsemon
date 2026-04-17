@@ -52,64 +52,70 @@ export async function GET(
   // Hide paused monitors from public status page
   const visibleMonitors = linkedMonitors.filter((m) => !m.isPaused);
 
-  // Fetch incidents for last 14 days for visible monitors
-  const fourteenDaysAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  // Fetch incidents for last 14 days (display) and 30 days (uptime) in parallel
+  const now = Date.now();
+  const fourteenDaysAgo = new Date(now - 14 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000);
   const monitorIds = visibleMonitors.map((m) => m.monitorId);
 
-  let recentIncidents: {
+  type IncidentRow = {
     id: string;
     monitorId: string;
     startedAt: Date;
     resolvedAt: Date | null;
-  }[] = [];
+  };
+  let recentIncidents: IncidentRow[] = [];
+  let uptimeIncidents: Omit<IncidentRow, 'id'>[] = [];
 
   if (monitorIds.length > 0) {
-    recentIncidents = await db
-      .select({
-        id: incidents.id,
-        monitorId: incidents.monitorId,
-        startedAt: incidents.startedAt,
-        resolvedAt: incidents.resolvedAt,
-      })
-      .from(incidents)
-      .where(
-        and(
-          inArray(incidents.monitorId, monitorIds),
-          gte(incidents.startedAt, fourteenDaysAgo),
+    [recentIncidents, uptimeIncidents] = await Promise.all([
+      db
+        .select({
+          id: incidents.id,
+          monitorId: incidents.monitorId,
+          startedAt: incidents.startedAt,
+          resolvedAt: incidents.resolvedAt,
+        })
+        .from(incidents)
+        .where(
+          and(
+            inArray(incidents.monitorId, monitorIds),
+            gte(incidents.startedAt, fourteenDaysAgo),
+          ),
         ),
-      );
+      db
+        .select({
+          monitorId: incidents.monitorId,
+          startedAt: incidents.startedAt,
+          resolvedAt: incidents.resolvedAt,
+        })
+        .from(incidents)
+        .where(
+          and(
+            inArray(incidents.monitorId, monitorIds),
+            gte(incidents.startedAt, thirtyDaysAgo),
+          ),
+        ),
+    ]);
   }
 
-  // Also fetch 30-day incidents for uptime calculation
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-
-  let uptimeIncidents: {
-    monitorId: string;
-    startedAt: Date;
-    resolvedAt: Date | null;
-  }[] = [];
-
-  if (monitorIds.length > 0) {
-    uptimeIncidents = await db
-      .select({
-        monitorId: incidents.monitorId,
-        startedAt: incidents.startedAt,
-        resolvedAt: incidents.resolvedAt,
-      })
-      .from(incidents)
-      .where(
-        and(
-          inArray(incidents.monitorId, monitorIds),
-          gte(incidents.startedAt, thirtyDaysAgo),
-        ),
-      );
+  // Group uptime incidents by monitorId once (avoid O(n*m) filter per monitor)
+  const incidentsByMonitor = new Map<
+    string,
+    Omit<IncidentRow, 'id' | 'monitorId'>[]
+  >();
+  for (const incident of uptimeIncidents) {
+    const list = incidentsByMonitor.get(incident.monitorId) ?? [];
+    list.push({
+      startedAt: incident.startedAt,
+      resolvedAt: incident.resolvedAt,
+    });
+    incidentsByMonitor.set(incident.monitorId, list);
   }
 
   // Compute uptime per monitor
   const monitorData = visibleMonitors.map((m) => {
-    const monitorIncidents = uptimeIncidents.filter(
-      (i) => i.monitorId === m.monitorId,
-    );
+    const monitorIncidents = incidentsByMonitor.get(m.monitorId) ?? [];
     const uptime = computeUptime(
       monitorIncidents,
       m.createdAt,

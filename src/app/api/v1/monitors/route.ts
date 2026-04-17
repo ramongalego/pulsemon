@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyApiKey } from '@/lib/api-key-auth';
 import { db } from '@/lib/db';
 import { monitors } from '@/lib/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { createMonitorSchema } from '@/lib/validations/monitor';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
 import { defaultGracePeriod } from '@/lib/monitoring/constants';
+import { checkApiKeyRateLimit } from '@/lib/rate-limit';
 
 export async function GET(req: NextRequest) {
   const apiKey = await verifyApiKey(req);
@@ -21,6 +22,9 @@ export async function GET(req: NextRequest) {
       { status: 401 },
     );
   }
+
+  const limited = await checkApiKeyRateLimit(apiKey.userId);
+  if (limited) return limited;
 
   const userMonitors = await db
     .select()
@@ -45,6 +49,9 @@ export async function POST(req: NextRequest) {
       { status: 401 },
     );
   }
+
+  const limited = await checkApiKeyRateLimit(apiKey.userId);
+  if (limited) return limited;
 
   try {
     const body = await req.json();
@@ -71,12 +78,12 @@ export async function POST(req: NextRequest) {
     const plan = await getUserPlan(apiKey.userId);
     const limits = getPlanLimits(plan);
 
-    const existingMonitors = await db
-      .select({ id: monitors.id })
+    const [{ count: existingCount }] = await db
+      .select({ count: sql<number>`cast(count(*) as int)` })
       .from(monitors)
       .where(eq(monitors.userId, apiKey.userId));
 
-    if (existingMonitors.length >= limits.monitors) {
+    if (existingCount >= limits.monitors) {
       return NextResponse.json(
         {
           data: null,
@@ -136,7 +143,8 @@ export async function POST(req: NextRequest) {
       .returning();
 
     return NextResponse.json({ data: monitor, error: null }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error('API create monitor failed:', err);
     return NextResponse.json(
       {
         data: null,

@@ -3,9 +3,12 @@ import { db } from '@/lib/db';
 import { sql } from 'drizzle-orm';
 
 export async function GET(req: Request) {
-  // Verify the request is from Vercel Cron
+  // Verify the request is from Vercel Cron. Reject if CRON_SECRET is unset
+  // so an unconfigured deploy can't be triggered by sending "Bearer undefined".
+  const cronSecret = process.env.CRON_SECRET;
   if (
-    req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`
+    !cronSecret ||
+    req.headers.get('authorization') !== `Bearer ${cronSecret}`
   ) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }

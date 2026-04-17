@@ -35,7 +35,14 @@ function validateEnv(): Env {
     console.error(
       'Copy .env.example to .env.local and fill in the values. See CLAUDE.md for setup instructions.',
     );
-    // Don't throw during build time - env vars may not be available
+    // Build phase (next build) and tests can run without secrets, but a
+    // running production server should never silently start with bad config.
+    if (
+      process.env.NODE_ENV === 'production' &&
+      process.env.NEXT_PHASE !== 'phase-production-build'
+    ) {
+      throw new Error(`Invalid environment configuration: ${missing}`);
+    }
     return process.env as unknown as Env;
   }
 

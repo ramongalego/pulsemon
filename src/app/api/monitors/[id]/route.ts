@@ -91,7 +91,8 @@ export async function PATCH(
     await redis.del(redisKeys.slugToMonitor(existing.slug));
 
     return NextResponse.json({ data: updated, error: null });
-  } catch {
+  } catch (err) {
+    console.error('Update monitor failed:', err);
     return NextResponse.json(
       {
         data: null,

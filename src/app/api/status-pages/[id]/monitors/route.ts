@@ -5,6 +5,7 @@ import { statusPages, statusPageMonitors, monitors } from '@/lib/db/schema';
 import { eq, and, inArray } from 'drizzle-orm';
 import { updateStatusPageMonitorsSchema } from '@/lib/validations/status-page';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
+import { checkMutationRateLimit } from '@/lib/rate-limit';
 
 export async function GET(
   _req: NextRequest,
@@ -69,6 +70,9 @@ export async function PUT(
   }
 
   const { id } = await params;
+
+  const limited = await checkMutationRateLimit(session.user.id);
+  if (limited) return limited;
 
   try {
     const body = await req.json();
@@ -169,7 +173,8 @@ export async function PUT(
     }
 
     return NextResponse.json({ data: { updated: true }, error: null });
-  } catch {
+  } catch (err) {
+    console.error('Update status page monitors failed:', err);
     return NextResponse.json(
       {
         data: null,

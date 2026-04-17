@@ -129,7 +129,8 @@ export async function PATCH(
       .returning();
 
     return NextResponse.json({ data: updated, error: null });
-  } catch {
+  } catch (err) {
+    console.error('Update status page failed:', err);
     return NextResponse.json(
       {
         data: null,

@@ -81,10 +81,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check total channel count
+    // Check total channel count (reuse plan to skip redundant lookup)
     const { allowed, limit } = await checkPlanLimit(
       session.user.id,
       'alertChannels',
+      plan,
     );
     if (!allowed) {
       return NextResponse.json(
@@ -164,7 +165,8 @@ export async function POST(req: NextRequest) {
       .returning();
 
     return NextResponse.json({ data: channel, error: null }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error('Create alert channel failed:', err);
     return NextResponse.json(
       {
         data: null,

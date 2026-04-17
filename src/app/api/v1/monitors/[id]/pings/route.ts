@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { monitors, pings } from '@/lib/db/schema';
 import { eq, and, desc, gte } from 'drizzle-orm';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
+import { checkApiKeyRateLimit } from '@/lib/rate-limit';
 
 const PAGE_SIZE = 20;
 
@@ -24,6 +25,9 @@ export async function GET(
       { status: 401 },
     );
   }
+
+  const limited = await checkApiKeyRateLimit(apiKey.userId);
+  if (limited) return limited;
 
   const { id } = await params;
 

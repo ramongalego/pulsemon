@@ -72,6 +72,15 @@ async function handleStripeEvent(event: Stripe.Event) {
         status: string;
         items: { data: Array<{ price: { lookup_key?: string } }> };
       };
+      // Only act on active/trialing subscriptions. canceled/unpaid/incomplete
+      // statuses are handled by their own events; acting here would race them.
+      if (
+        subscription.status !== 'active' &&
+        subscription.status !== 'trialing'
+      ) {
+        break;
+      }
+
       // Lifetime users have no subscription - skip if matched by accident
       const [updatedUser] = await db
         .select({ plan: users.plan })

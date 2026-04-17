@@ -79,12 +79,13 @@ export async function POST(req: NextRequest) {
 
     const { title, slug, description } = parsed.data;
 
-    // Check plan limits
+    // Check plan limits (reuse plan to skip redundant lookup)
     const plan = await getUserPlan(session.user.id);
 
     const { allowed, limit } = await checkPlanLimit(
       session.user.id,
       'statusPages',
+      plan,
     );
     if (!allowed) {
       return NextResponse.json(
@@ -130,7 +131,8 @@ export async function POST(req: NextRequest) {
       .returning();
 
     return NextResponse.json({ data: page, error: null }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error('Create status page failed:', err);
     return NextResponse.json(
       {
         data: null,

@@ -6,6 +6,7 @@ import { eq, and } from 'drizzle-orm';
 import { redis, redisKeys } from '@/lib/redis';
 import { updateMonitorSchema } from '@/lib/validations/monitor';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
+import { checkApiKeyRateLimit } from '@/lib/rate-limit';
 
 export async function GET(
   req: NextRequest,
@@ -24,6 +25,9 @@ export async function GET(
       { status: 401 },
     );
   }
+
+  const limited = await checkApiKeyRateLimit(apiKey.userId);
+  if (limited) return limited;
 
   const { id } = await params;
 
@@ -63,6 +67,9 @@ export async function PATCH(
       { status: 401 },
     );
   }
+
+  const limited = await checkApiKeyRateLimit(apiKey.userId);
+  if (limited) return limited;
 
   const { id } = await params;
 
@@ -121,13 +128,14 @@ export async function PATCH(
     const [updated] = await db
       .update(monitors)
       .set({ ...parsed.data, updatedAt: new Date() })
-      .where(eq(monitors.id, id))
+      .where(and(eq(monitors.id, id), eq(monitors.userId, apiKey.userId)))
       .returning();
 
     await redis.del(redisKeys.slugToMonitor(existing.slug));
 
     return NextResponse.json({ data: updated, error: null });
-  } catch {
+  } catch (err) {
+    console.error('API update monitor failed:', err);
     return NextResponse.json(
       {
         data: null,
@@ -159,6 +167,9 @@ export async function DELETE(
     );
   }
 
+  const limited = await checkApiKeyRateLimit(apiKey.userId);
+  if (limited) return limited;
+
   const { id } = await params;
 
   const [existing] = await db
@@ -177,7 +188,9 @@ export async function DELETE(
     );
   }
 
-  await db.delete(monitors).where(eq(monitors.id, id));
+  await db
+    .delete(monitors)
+    .where(and(eq(monitors.id, id), eq(monitors.userId, apiKey.userId)));
 
   await redis.del(redisKeys.slugToMonitor(existing.slug));
   await redis.del(redisKeys.lastPing(existing.id));

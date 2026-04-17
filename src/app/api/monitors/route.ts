@@ -66,13 +66,14 @@ export async function POST(req: NextRequest) {
     const gracePeriod =
       parsed.data.gracePeriod ?? defaultGracePeriod(expectedInterval);
 
-    // Check plan limits
+    // Check plan limits (pass plan to skip a redundant lookup inside checkPlanLimit)
     const plan = await getUserPlan(session.user.id);
     const limits = getPlanLimits(plan);
 
     const { allowed, limit } = await checkPlanLimit(
       session.user.id,
       'monitors',
+      plan,
     );
     if (!allowed) {
       return NextResponse.json(
@@ -134,7 +135,8 @@ export async function POST(req: NextRequest) {
       .returning();
 
     return NextResponse.json({ data: monitor, error: null }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error('Create monitor failed:', err);
     return NextResponse.json(
       {
         data: null,

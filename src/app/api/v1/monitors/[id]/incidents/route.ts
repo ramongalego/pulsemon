@@ -3,6 +3,7 @@ import { verifyApiKey } from '@/lib/api-key-auth';
 import { db } from '@/lib/db';
 import { monitors, incidents } from '@/lib/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
+import { checkApiKeyRateLimit } from '@/lib/rate-limit';
 
 const PAGE_SIZE = 10;
 
@@ -23,6 +24,9 @@ export async function GET(
       { status: 401 },
     );
   }
+
+  const limited = await checkApiKeyRateLimit(apiKey.userId);
+  if (limited) return limited;
 
   const { id } = await params;
 
