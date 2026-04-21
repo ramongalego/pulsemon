@@ -3,11 +3,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock Redis
 const mockRedisGet = vi.fn();
 const mockRedisSet = vi.fn().mockResolvedValue('OK');
+const mockRedisDel = vi.fn().mockResolvedValue(1);
 
 vi.mock('@/lib/redis', () => ({
   redis: {
     get: (...args: unknown[]) => mockRedisGet(...args),
     set: (...args: unknown[]) => mockRedisSet(...args),
+    del: (...args: unknown[]) => mockRedisDel(...args),
   },
   redisKeys: {
     lastPing: (id: string) => `ping:${id}:last`,
@@ -196,6 +198,9 @@ describe('Ping Endpoint', () => {
         expect.any(Number),
         expect.any(Object),
       );
+      // Fail pings MUST delete lastPing so the checker sees the monitor as
+      // late and does not misread a stale fresh ping as a recovery.
+      expect(mockRedisDel).toHaveBeenCalledWith('ping:mon-123:last');
     });
   });
 
@@ -227,6 +232,13 @@ describe('Ping Endpoint', () => {
       });
 
       expect(res.status).toBe(200);
+      // POST fail also clears lastPing in Redis.
+      expect(mockRedisDel).toHaveBeenCalledWith('ping:mon-123:last');
+      expect(mockRedisSet).not.toHaveBeenCalledWith(
+        'ping:mon-123:last',
+        expect.any(Number),
+        expect.any(Object),
+      );
     });
 
     it('handles POST with malformed body gracefully', async () => {

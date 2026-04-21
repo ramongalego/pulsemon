@@ -109,11 +109,17 @@ async function handlePing(
       }
     }
 
-    // Only success pings reset the deadline. Start and fail pings do not.
+    // Only success pings reset the deadline. Start pings don't touch it.
+    // Fail pings clear it so the checker sees the monitor as late — otherwise
+    // a fresh lastPing from a prior success would make !isLate && status=down,
+    // which the checker would misread as a recovery and instantly resolve
+    // the explicit_failure incident.
     if (pingStatus === 'success') {
       const ttl =
         monitor.expectedInterval + monitor.gracePeriod + REDIS_TTL_BUFFER;
       await redis.set(redisKeys.lastPing(monitor.id), now, { ex: ttl });
+    } else if (pingStatus === 'fail') {
+      await redis.del(redisKeys.lastPing(monitor.id));
     }
 
     const sourceIp =
