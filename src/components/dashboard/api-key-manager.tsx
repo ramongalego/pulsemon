@@ -20,6 +20,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { CopyButton } from '@/components/dashboard/copy-button';
 import { Key, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -39,6 +49,7 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ApiKeyItem[] }) {
   const [isCreating, setIsCreating] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<ApiKeyItem | null>(null);
 
   async function handleCreate() {
     if (!newKeyName.trim()) return;
@@ -206,8 +217,9 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ApiKeyItem[] }) {
                     variant="ghost"
                     size="icon"
                     className="text-muted-foreground h-8 w-8 hover:text-red-600"
-                    onClick={() => handleDelete(key.id)}
+                    onClick={() => setPendingDelete(key)}
                     disabled={deletingId === key.id}
+                    aria-label={`Delete API key ${key.name}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -217,6 +229,35 @@ export function ApiKeyManager({ initialKeys }: { initialKeys: ApiKeyItem[] }) {
           </div>
         )}
       </CardContent>
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Delete {pendingDelete?.name ?? 'this API key'}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Anything using this key will lose API access immediately. This
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingDelete) handleDelete(pendingDelete.id);
+                setPendingDelete(null);
+              }}
+            >
+              Delete Key
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

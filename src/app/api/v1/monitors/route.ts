@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyApiKey } from '@/lib/api-key-auth';
 import { db } from '@/lib/db';
 import { monitors } from '@/lib/db/schema';
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { createMonitorSchema } from '@/lib/validations/monitor';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
+import { checkPlanLimit } from '@/lib/plan-enforcement';
 import { defaultGracePeriod } from '@/lib/monitoring/constants';
 import { checkApiKeyRateLimit } from '@/lib/rate-limit';
 
@@ -74,22 +75,22 @@ export async function POST(req: NextRequest) {
     const gracePeriod =
       parsed.data.gracePeriod ?? defaultGracePeriod(expectedInterval);
 
-    // Check plan limits
+    // Check plan limits (pass plan to skip a redundant lookup inside checkPlanLimit)
     const plan = await getUserPlan(apiKey.userId);
     const limits = getPlanLimits(plan);
 
-    const [{ count: existingCount }] = await db
-      .select({ count: sql<number>`cast(count(*) as int)` })
-      .from(monitors)
-      .where(eq(monitors.userId, apiKey.userId));
-
-    if (existingCount >= limits.monitors) {
+    const { allowed, limit } = await checkPlanLimit(
+      apiKey.userId,
+      'monitors',
+      plan,
+    );
+    if (!allowed) {
       return NextResponse.json(
         {
           data: null,
           error: {
             code: 'PLAN_LIMIT',
-            message: `Your ${plan} plan allows ${limits.monitors} monitor${limits.monitors === 1 ? '' : 's'}. Upgrade to add more.`,
+            message: `Your ${plan} plan allows ${limit} monitor${limit === 1 ? '' : 's'}. Upgrade to add more.`,
           },
         },
         { status: 403 },

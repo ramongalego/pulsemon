@@ -320,7 +320,7 @@ export function UpgradeModal({
             >
               <div className="text-center">
                 <h3 className="text-lg font-semibold">
-                  Founding Member — Lifetime Plan
+                  Founding Member Lifetime Plan
                 </h3>
                 <div className="mt-3 flex items-baseline justify-center gap-1">
                   <span className="text-4xl font-bold">$349</span>

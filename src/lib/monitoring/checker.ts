@@ -1,7 +1,7 @@
 import { db } from '@/lib/db';
 import { monitors, incidents, pings } from '@/lib/db/schema';
 import { redis, redisKeys } from '@/lib/redis';
-import { eq, and, ne, isNull, desc } from 'drizzle-orm';
+import { eq, and, ne, isNull, asc, desc, inArray } from 'drizzle-orm';
 import { dispatchAlerts } from './alerter';
 import { isMonitorLate, shouldSendReminder, isDurationExceeded } from './utils';
 import type { Monitor, Incident } from '@/lib/db/schema';
@@ -51,17 +51,59 @@ export async function checkMonitors(): Promise<CheckResult[]> {
     ...redisKeysToCheck,
   );
 
+  const now = Date.now();
+  const lateById = new Map<string, boolean>();
   for (let i = 0; i < activeMonitors.length; i++) {
     const monitor = activeMonitors[i];
-    const lastPing = lastPingTimes[i];
-    const now = Date.now();
-
-    const isLate = isMonitorLate(
-      lastPing,
-      monitor.expectedInterval,
-      monitor.gracePeriod,
-      now,
+    lateById.set(
+      monitor.id,
+      isMonitorLate(
+        lastPingTimes[i],
+        monitor.expectedInterval,
+        monitor.gracePeriod,
+        now,
+      ),
     );
+  }
+
+  const monitorsWithMaxDuration = activeMonitors.filter(
+    (m) => m.maxDuration !== null,
+  );
+
+  // Batch-fetch every open incident the loops below could need, instead of
+  // querying per monitor. Oldest first, so [0] is the primary incident.
+  const incidentLookupIds = new Set<string>(
+    monitorsWithMaxDuration.map((m) => m.id),
+  );
+  for (const monitor of activeMonitors) {
+    if (lateById.get(monitor.id) || monitor.status === 'down') {
+      incidentLookupIds.add(monitor.id);
+    }
+  }
+
+  const openIncidentsByMonitor = new Map<string, Incident[]>();
+  if (incidentLookupIds.size > 0) {
+    const openIncidents = await db
+      .select()
+      .from(incidents)
+      .where(
+        and(
+          inArray(incidents.monitorId, [...incidentLookupIds]),
+          isNull(incidents.resolvedAt),
+        ),
+      )
+      .orderBy(asc(incidents.startedAt));
+
+    for (const incident of openIncidents) {
+      const list = openIncidentsByMonitor.get(incident.monitorId) ?? [];
+      list.push(incident);
+      openIncidentsByMonitor.set(incident.monitorId, list);
+    }
+  }
+
+  for (const monitor of activeMonitors) {
+    const isLate = lateById.get(monitor.id) ?? false;
+    const openForMonitor = openIncidentsByMonitor.get(monitor.id) ?? [];
 
     if (isLate && monitor.status !== 'down') {
       // Atomically set status to 'down' only if it hasn't been set already
@@ -84,17 +126,9 @@ export async function checkMonitors(): Promise<CheckResult[]> {
         continue;
       }
 
-      // Check if a fail ping already created an incident (explicit_failure or overlap)
-      const [existingOpenIncident] = await db
-        .select()
-        .from(incidents)
-        .where(
-          and(
-            eq(incidents.monitorId, monitor.id),
-            isNull(incidents.resolvedAt),
-          ),
-        )
-        .limit(1);
+      // A fail ping may already have created an incident (explicit_failure
+      // or overlap); escalate that one instead of opening a duplicate.
+      const existingOpenIncident = openForMonitor[0];
 
       if (existingOpenIncident) {
         await maybeEscalate(monitor, existingOpenIncident, now);
@@ -109,6 +143,7 @@ export async function checkMonitors(): Promise<CheckResult[]> {
           })
           .returning();
 
+        openIncidentsByMonitor.set(monitor.id, [...openForMonitor, incident]);
         await dispatchAlerts(monitor, 'monitor.down', incident);
       }
 
@@ -121,18 +156,8 @@ export async function checkMonitors(): Promise<CheckResult[]> {
         action: 'went_down',
       });
     } else if (isLate && monitor.status === 'down') {
-      // Still down — escalate if we hit the next reminder interval
-      const [openIncident] = await db
-        .select()
-        .from(incidents)
-        .where(
-          and(
-            eq(incidents.monitorId, monitor.id),
-            isNull(incidents.resolvedAt),
-          ),
-        )
-        .limit(1);
-
+      // Still down: escalate if we hit the next reminder interval
+      const openIncident = openForMonitor[0];
       if (openIncident) {
         await maybeEscalate(monitor, openIncident, now);
       }
@@ -147,16 +172,7 @@ export async function checkMonitors(): Promise<CheckResult[]> {
       });
     } else if (!isLate && monitor.status === 'down') {
       // Monitor recovered
-      const [openIncident] = await db
-        .select()
-        .from(incidents)
-        .where(
-          and(
-            eq(incidents.monitorId, monitor.id),
-            isNull(incidents.resolvedAt),
-          ),
-        )
-        .limit(1);
+      const openIncident = openForMonitor[0];
 
       if (openIncident) {
         const resolvedIncident = {
@@ -164,7 +180,7 @@ export async function checkMonitors(): Promise<CheckResult[]> {
           resolvedAt: new Date(now),
         };
 
-        // Best-effort alert — resolve incident and update status regardless,
+        // Best-effort alert: resolve incident and update status regardless,
         // so a transient alert failure doesn't orphan the incident forever.
         try {
           await dispatchAlerts(monitor, 'monitor.up', resolvedIncident);
@@ -185,6 +201,12 @@ export async function checkMonitors(): Promise<CheckResult[]> {
             .set({ status: 'up', updatedAt: new Date(now) })
             .where(eq(monitors.id, monitor.id)),
         ]);
+
+        // Keep the in-cycle view coherent for the duration checks below
+        openIncidentsByMonitor.set(
+          monitor.id,
+          openForMonitor.filter((i) => i.id !== openIncident.id),
+        );
       } else {
         await db
           .update(monitors)
@@ -212,66 +234,64 @@ export async function checkMonitors(): Promise<CheckResult[]> {
     }
   }
 
-  // Duration threshold checks
-  const monitorsWithMaxDuration = activeMonitors.filter(
-    (m) => m.maxDuration !== null,
-  );
-
-  for (const monitor of monitorsWithMaxDuration) {
-    const [latestPing] = await db
-      .select({ id: pings.id, duration: pings.duration, body: pings.body })
+  // Duration threshold checks. Latest ping per monitor in one query
+  // (DISTINCT ON walks the (monitor_id, received_at) index).
+  if (monitorsWithMaxDuration.length > 0) {
+    const latestPings = await db
+      .selectDistinctOn([pings.monitorId], {
+        monitorId: pings.monitorId,
+        duration: pings.duration,
+      })
       .from(pings)
-      .where(eq(pings.monitorId, monitor.id))
-      .orderBy(desc(pings.receivedAt))
-      .limit(1);
-
-    if (!latestPing || latestPing.duration === null) continue;
-
-    // Check for open duration_exceeded incident
-    const [openDurationIncident] = await db
-      .select()
-      .from(incidents)
       .where(
-        and(
-          eq(incidents.monitorId, monitor.id),
-          eq(incidents.cause, 'duration_exceeded'),
-          isNull(incidents.resolvedAt),
+        inArray(
+          pings.monitorId,
+          monitorsWithMaxDuration.map((m) => m.id),
         ),
       )
-      .limit(1);
+      .orderBy(pings.monitorId, desc(pings.receivedAt));
 
-    if (isDurationExceeded(latestPing.duration, monitor.maxDuration)) {
-      if (!openDurationIncident) {
-        // Create incident and alert
-        const now = Date.now();
-        const [incident] = await db
-          .insert(incidents)
-          .values({
+    const latestPingByMonitor = new Map(
+      latestPings.map((p) => [p.monitorId, p]),
+    );
+
+    for (const monitor of monitorsWithMaxDuration) {
+      const latestPing = latestPingByMonitor.get(monitor.id);
+      if (!latestPing || latestPing.duration === null) continue;
+
+      const openDurationIncident = (
+        openIncidentsByMonitor.get(monitor.id) ?? []
+      ).find((i) => i.cause === 'duration_exceeded');
+
+      if (isDurationExceeded(latestPing.duration, monitor.maxDuration)) {
+        if (!openDurationIncident) {
+          // Create incident and alert
+          const [incident] = await db
+            .insert(incidents)
+            .values({
+              monitorId: monitor.id,
+              startedAt: new Date(now),
+              cause: 'duration_exceeded',
+              alertsSent: 1,
+            })
+            .returning();
+
+          await dispatchAlerts(monitor, 'monitor.slow', incident, {
+            lastPingDuration: latestPing.duration,
+          });
+
+          results.push({
             monitorId: monitor.id,
-            startedAt: new Date(now),
-            cause: 'duration_exceeded',
-            alertsSent: 1,
-          })
-          .returning();
-
-        await dispatchAlerts(monitor, 'monitor.slow', incident, {
-          lastPingDuration: latestPing.duration,
-        });
-
-        results.push({
-          monitorId: monitor.id,
-          monitorName: monitor.name,
-          slug: monitor.slug,
-          previousStatus: monitor.status,
-          newStatus: monitor.status as 'up' | 'down',
-          action: 'slow',
-        });
-      }
-      // If there's already an open incident, do nothing (avoid duplicate alerts)
-    } else {
-      // Duration is within threshold — resolve open incident if any
-      if (openDurationIncident) {
-        const now = Date.now();
+            monitorName: monitor.name,
+            slug: monitor.slug,
+            previousStatus: monitor.status,
+            newStatus: monitor.status as 'up' | 'down',
+            action: 'slow',
+          });
+        }
+        // If there's already an open incident, do nothing (avoid duplicate alerts)
+      } else if (openDurationIncident) {
+        // Duration is back within threshold: resolve the open incident
         const resolvedIncident = {
           ...openDurationIncident,
           resolvedAt: new Date(now),

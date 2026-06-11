@@ -34,10 +34,10 @@ export function FullPingsTable({ pings }: { pings: Ping[] }) {
             <RelativeTime date={ping.receivedAt} />
           </span>
           <span className="text-muted-foreground">
-            {ping.duration ? `${ping.duration}ms` : '—'}
+            {ping.duration ? `${ping.duration}ms` : '–'}
           </span>
           <span className="text-muted-foreground hidden truncate sm:block">
-            {ping.sourceIp || '—'}
+            {ping.sourceIp || '–'}
           </span>
         </div>
       ))}

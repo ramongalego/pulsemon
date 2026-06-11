@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   pgTable,
   uuid,
@@ -184,7 +185,14 @@ export const incidents = pgTable(
     cause: text('cause').default('missed_ping').notNull(),
     alertsSent: integer('alerts_sent').default(0).notNull(),
   },
-  (table) => [index('incidents_monitor_id_idx').on(table.monitorId)],
+  (table) => [
+    index('incidents_monitor_id_idx').on(table.monitorId),
+    // Partial index for the hot "open incidents for monitor" lookup used by
+    // the checker and the ping endpoint on every cycle.
+    index('incidents_monitor_open_idx')
+      .on(table.monitorId)
+      .where(sql`${table.resolvedAt} IS NULL`),
+  ],
 );
 
 // API Keys

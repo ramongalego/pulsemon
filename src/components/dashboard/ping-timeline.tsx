@@ -224,9 +224,9 @@ export function PingTimeline({
               <p className="text-xs">
                 {slot.status === 'up' &&
                   `${slot.pingCount} ping${slot.pingCount === 1 ? '' : 's'}`}
-                {slot.status === 'down' && 'Incident — no pings'}
+                {slot.status === 'down' && 'Incident, no pings'}
                 {slot.status === 'recovered' &&
-                  `Recovered — ${slot.pingCount} ping${slot.pingCount === 1 ? '' : 's'}`}
+                  `Recovered, ${slot.pingCount} ping${slot.pingCount === 1 ? '' : 's'}`}
                 {slot.status === 'idle' && 'No activity'}
               </p>
             </TooltipContent>

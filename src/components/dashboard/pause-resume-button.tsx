@@ -53,6 +53,7 @@ export function PauseResumeButton({
       onClick={handleToggle}
       disabled={loading}
       title={showPaused ? 'Resume monitor' : 'Pause monitor'}
+      aria-label={showPaused ? 'Resume monitor' : 'Pause monitor'}
     >
       {loading ? (
         <Loader2 className="h-4 w-4 animate-spin" />

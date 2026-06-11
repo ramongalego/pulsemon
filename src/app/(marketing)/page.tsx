@@ -735,7 +735,7 @@ export default function LandingPage() {
                   a: (
                     <>
                       Any. If it can make an HTTP request, it works. Bash,
-                      Python, Node.js, Go, Ruby, PHP, Docker — we have examples
+                      Python, Node.js, Go, Ruby, PHP, Docker. We have examples
                       for all of them in the docs.
                     </>
                   ),

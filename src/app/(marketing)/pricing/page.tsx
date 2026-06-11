@@ -44,7 +44,7 @@ const faqs = [
     id: 'upgrade',
     question: 'Can I upgrade or downgrade at any time?',
     answer:
-      "Yes. Upgrade instantly to get more monitors and faster checks. Downgrade anytime — you'll keep your current plan until the end of the billing period. Your existing monitors and alert channels keep running even if you're over the new plan's limits.",
+      "Yes. Upgrade instantly to get more monitors and faster checks. Downgrade anytime and you'll keep your current plan until the end of the billing period. Your existing monitors and alert channels keep running even if you're over the new plan's limits.",
   },
   {
     id: 'billing',

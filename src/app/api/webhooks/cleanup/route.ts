@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Receiver } from '@upstash/qstash';
 import { cleanupOldPings } from '@/lib/monitoring/cleanup';
+import { env } from '@/lib/env';
 
 const receiver = new Receiver({
-  currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY!,
-  nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY!,
+  currentSigningKey: env.QSTASH_CURRENT_SIGNING_KEY,
+  nextSigningKey: env.QSTASH_NEXT_SIGNING_KEY,
 });
 
 export async function POST(req: NextRequest) {

@@ -132,6 +132,7 @@ export default async function StatusPagesPage() {
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
+                            aria-label="Open status page in new tab"
                           >
                             <ExternalLink className="h-3.5 w-3.5" />
                           </Button>

@@ -43,6 +43,13 @@
       "when": 1773600796198,
       "tag": "0005_nosy_nocturne",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1781187576871,
+      "tag": "0006_brave_chamber",
+      "breakpoints": true
     }
   ]
 }

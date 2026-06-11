@@ -1,0 +1,1 @@
+CREATE INDEX "incidents_monitor_open_idx" ON "incidents" USING btree ("monitor_id") WHERE "incidents"."resolved_at" IS NULL;

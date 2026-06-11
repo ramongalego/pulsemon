@@ -3,12 +3,22 @@ import { after } from 'next/server';
 import { redis, redisKeys } from '@/lib/redis';
 import { db } from '@/lib/db';
 import { monitors, pings, incidents } from '@/lib/db/schema';
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, isNull, desc } from 'drizzle-orm';
 import { REDIS_TTL_BUFFER } from '@/lib/monitoring/constants';
 import { dispatchAlerts } from '@/lib/monitoring/alerter';
-import type { Monitor, Incident } from '@/lib/db/schema';
+import type { Incident } from '@/lib/db/schema';
 
 export const runtime = 'edge';
+
+// Postgres integer column limit; also rejects negative/NaN/Infinity input.
+const MAX_DURATION_MS = 2_147_483_647;
+
+function parseDuration(value: unknown): number | null {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  const ms = Math.round(n);
+  return ms >= 0 && ms <= MAX_DURATION_MS ? ms : null;
+}
 
 type MonitorCache = {
   id: string;
@@ -95,14 +105,14 @@ async function handlePing(
     let body: string | null = null;
 
     const qDuration = url.searchParams.get('duration');
-    if (qDuration) duration = parseInt(qDuration, 10) || null;
+    if (qDuration) duration = parseDuration(qDuration);
 
     if (req.method === 'POST') {
       try {
         const json = await req.json();
         if (json.status === 'fail') pingStatus = 'fail';
         if (json.status === 'start') pingStatus = 'start';
-        if (json.duration) duration = Number(json.duration) || null;
+        if (json.duration != null) duration = parseDuration(json.duration);
         if (json.body) body = String(json.body).slice(0, 10000);
       } catch {
         // Body parsing is optional, ignore errors
@@ -131,22 +141,28 @@ async function handlePing(
       try {
         if (pingStatus === 'start') {
           // Check if already running (overlap detection)
-          const [monitorState] = await db
-            .select({
-              isRunning: monitors.isRunning,
-              lastStartAt: monitors.lastStartAt,
-            })
+          const [fullMonitor] = await db
+            .select()
             .from(monitors)
-            .where(eq(monitors.id, monitor.id));
+            .where(eq(monitors.id, monitor.id))
+            .limit(1);
 
-          if (monitorState?.isRunning) {
-            const [fullMonitor] = await db
-              .select()
-              .from(monitors)
-              .where(eq(monitors.id, monitor.id))
+          if (fullMonitor?.isRunning) {
+            // Skip if an overlap incident is already open (e.g. the start
+            // ping was retried) so we don't stack duplicates.
+            const [openOverlap] = await db
+              .select({ id: incidents.id })
+              .from(incidents)
+              .where(
+                and(
+                  eq(incidents.monitorId, monitor.id),
+                  eq(incidents.cause, 'overlap'),
+                  isNull(incidents.resolvedAt),
+                ),
+              )
               .limit(1);
 
-            if (fullMonitor) {
+            if (!openOverlap) {
               const [incident] = await db
                 .insert(incidents)
                 .values({
@@ -158,11 +174,7 @@ async function handlePing(
                 .returning();
 
               try {
-                await dispatchAlerts(
-                  fullMonitor as Monitor,
-                  'monitor.overlap',
-                  incident,
-                );
+                await dispatchAlerts(fullMonitor, 'monitor.overlap', incident);
               } catch (alertErr) {
                 console.error(
                   `Overlap alert failed for monitor ${monitor.id}:`,
@@ -182,7 +194,7 @@ async function handlePing(
             .where(eq(monitors.id, monitor.id));
         } else if (pingStatus === 'fail') {
           // Fail ping: mark monitor down, create incident if none open
-          await db
+          const [fullMonitor] = await db
             .update(monitors)
             .set({
               lastPingAt: new Date(now),
@@ -190,54 +202,44 @@ async function handlePing(
               isRunning: false,
               updatedAt: new Date(now),
             })
-            .where(eq(monitors.id, monitor.id));
+            .where(eq(monitors.id, monitor.id))
+            .returning();
 
           // Check for open incidents to avoid duplicates
-          const openIncidents = await db
-            .select()
+          const [openIncident] = await db
+            .select({ id: incidents.id })
             .from(incidents)
             .where(
               and(
                 eq(incidents.monitorId, monitor.id),
                 isNull(incidents.resolvedAt),
               ),
-            );
+            )
+            .limit(1);
 
-          if (openIncidents.length === 0) {
-            const [fullMonitor] = await db
-              .select()
-              .from(monitors)
-              .where(eq(monitors.id, monitor.id))
-              .limit(1);
+          if (fullMonitor && !openIncident) {
+            const [incident] = await db
+              .insert(incidents)
+              .values({
+                monitorId: monitor.id,
+                startedAt: new Date(now),
+                cause: 'explicit_failure',
+                alertsSent: 1,
+              })
+              .returning();
 
-            if (fullMonitor) {
-              const [incident] = await db
-                .insert(incidents)
-                .values({
-                  monitorId: monitor.id,
-                  startedAt: new Date(now),
-                  cause: 'explicit_failure',
-                  alertsSent: 1,
-                })
-                .returning();
-
-              try {
-                await dispatchAlerts(
-                  fullMonitor as Monitor,
-                  'monitor.down',
-                  incident,
-                );
-              } catch (alertErr) {
-                console.error(
-                  `Fail alert failed for monitor ${monitor.id}:`,
-                  alertErr,
-                );
-              }
+            try {
+              await dispatchAlerts(fullMonitor, 'monitor.down', incident);
+            } catch (alertErr) {
+              console.error(
+                `Fail alert failed for monitor ${monitor.id}:`,
+                alertErr,
+              );
             }
           }
         } else {
           // Success ping: mark up, clear isRunning
-          await db
+          const [fullMonitor] = await db
             .update(monitors)
             .set({
               lastPingAt: new Date(now),
@@ -245,9 +247,10 @@ async function handlePing(
               isRunning: false,
               updatedAt: new Date(now),
             })
-            .where(eq(monitors.id, monitor.id));
+            .where(eq(monitors.id, monitor.id))
+            .returning();
 
-          // Resolve all open incidents and send recovery alert
+          // Resolve all open incidents, newest first for the alert payload
           const openIncidents = await db
             .select()
             .from(incidents)
@@ -256,17 +259,24 @@ async function handlePing(
                 eq(incidents.monitorId, monitor.id),
                 isNull(incidents.resolvedAt),
               ),
-            );
+            )
+            .orderBy(desc(incidents.startedAt));
 
           if (openIncidents.length > 0) {
-            const [fullMonitor] = await db
-              .select()
-              .from(monitors)
-              .where(eq(monitors.id, monitor.id))
-              .limit(1);
+            // Resolve before alerting so a failed alert can't leave open
+            // incidents on a monitor that's already marked up.
+            await db
+              .update(incidents)
+              .set({ resolvedAt: new Date(now) })
+              .where(
+                and(
+                  eq(incidents.monitorId, monitor.id),
+                  isNull(incidents.resolvedAt),
+                ),
+              );
 
             if (fullMonitor) {
-              const latest = openIncidents[openIncidents.length - 1];
+              const latest = openIncidents[0];
               const resolvedIncident: Incident = {
                 ...latest,
                 resolvedAt: new Date(now),
@@ -274,23 +284,16 @@ async function handlePing(
 
               try {
                 await dispatchAlerts(
-                  fullMonitor as Monitor,
+                  fullMonitor,
                   'monitor.up',
                   resolvedIncident,
                 );
               } catch (alertErr) {
                 console.error(
-                  `Recovery alert failed for incident ${latest.id}, leaving open for retry:`,
+                  `Recovery alert failed for incident ${latest.id}:`,
                   alertErr,
                 );
               }
-            }
-
-            for (const incident of openIncidents) {
-              await db
-                .update(incidents)
-                .set({ resolvedAt: new Date(now) })
-                .where(eq(incidents.id, incident.id));
             }
           }
         }

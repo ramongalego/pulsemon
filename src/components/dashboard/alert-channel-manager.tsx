@@ -21,6 +21,16 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -94,6 +104,7 @@ export function AlertChannelManager({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<AlertChannel | null>(null);
   const [planLimitMessage, setPlanLimitMessage] = useState<string | null>(null);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
@@ -202,6 +213,13 @@ export function AlertChannelManager({
 
   const atLimit = channelLimit !== Infinity && channels.length >= channelLimit;
 
+  const urlInvalid = webhookUrl.length > 0 && !webhookUrl.startsWith('http');
+  const urlHint = urlInvalid ? (
+    <p className="text-xs text-red-600 dark:text-red-400">
+      URL must start with http:// or https://
+    </p>
+  ) : null;
+
   return (
     <>
       <div className="flex items-center justify-between">
@@ -285,7 +303,13 @@ export function AlertChannelManager({
                     placeholder="alerts@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    aria-invalid={email.length > 0 && !email.includes('@')}
                   />
+                  {email.length > 0 && !email.includes('@') && (
+                    <p className="text-xs text-red-600 dark:text-red-400">
+                      Enter a valid email address
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -298,7 +322,9 @@ export function AlertChannelManager({
                       placeholder="https://hooks.slack.com/services/..."
                       value={webhookUrl}
                       onChange={(e) => setWebhookUrl(e.target.value)}
+                      aria-invalid={urlInvalid}
                     />
+                    {urlHint}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="channel-slack-channel">
@@ -324,7 +350,9 @@ export function AlertChannelManager({
                     placeholder="https://discord.com/api/webhooks/..."
                     value={webhookUrl}
                     onChange={(e) => setWebhookUrl(e.target.value)}
+                    aria-invalid={urlInvalid}
                   />
+                  {urlHint}
                 </div>
               )}
 
@@ -337,7 +365,9 @@ export function AlertChannelManager({
                       placeholder="https://api.example.com/alerts"
                       value={webhookUrl}
                       onChange={(e) => setWebhookUrl(e.target.value)}
+                      aria-invalid={urlInvalid}
                     />
+                    {urlHint}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="channel-webhook-secret">
@@ -437,8 +467,9 @@ export function AlertChannelManager({
                       variant="ghost"
                       size="icon"
                       className="text-muted-foreground h-8 w-8 hover:text-red-600"
-                      onClick={() => handleDelete(channel.id)}
+                      onClick={() => setPendingDelete(channel)}
                       disabled={deletingId === channel.id}
+                      aria-label={`Delete ${CHANNEL_LABELS[channel.type]} channel`}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -462,6 +493,37 @@ export function AlertChannelManager({
           currentPlan={currentPlan}
           message="You've reached your alert channel limit. Upgrade your plan to add more."
         />
+        <AlertDialog
+          open={pendingDelete !== null}
+          onOpenChange={(open) => {
+            if (!open) setPendingDelete(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Delete this{' '}
+                {pendingDelete ? CHANNEL_LABELS[pendingDelete.type] : ''}{' '}
+                channel?
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                Monitors using this channel will stop sending alerts to it. This
+                cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (pendingDelete) handleDelete(pendingDelete.id);
+                  setPendingDelete(null);
+                }}
+              >
+                Delete Channel
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </Card>
     </>
   );

@@ -146,10 +146,10 @@ function PingRow({ ping }: { ping: Ping }) {
           <RelativeTime date={ping.receivedAt} />
         </span>
         <span className="text-muted-foreground">
-          {ping.duration ? `${ping.duration}ms` : '—'}
+          {ping.duration ? `${ping.duration}ms` : '–'}
         </span>
         <span className="text-muted-foreground hidden truncate sm:block">
-          {ping.sourceIp || '—'}
+          {ping.sourceIp || '–'}
         </span>
         <span className="flex w-5 items-center justify-center">
           {hasBody &&

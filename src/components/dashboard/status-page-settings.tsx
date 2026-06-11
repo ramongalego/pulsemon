@@ -172,7 +172,12 @@ export function StatusPageSettings({ statusPage }: { statusPage: StatusPage }) {
           </code>
           <CopyButton text={publicUrl} />
           <a href={publicUrl} target="_blank" rel="noopener noreferrer">
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              aria-label="Open status page in new tab"
+            >
               <ExternalLink className="h-3.5 w-3.5" />
             </Button>
           </a>

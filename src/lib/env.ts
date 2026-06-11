@@ -15,7 +15,7 @@ const envSchema = z.object({
   AUTH_GOOGLE_SECRET: z.string().optional(),
   RESEND_API_KEY: z.string().min(1),
   STRIPE_SECRET_KEY: z.string().min(1),
-  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1),
   STRIPE_STARTER_MONTHLY_PRICE_ID: z.string().optional(),
   STRIPE_STARTER_YEARLY_PRICE_ID: z.string().optional(),
   STRIPE_PRO_MONTHLY_PRICE_ID: z.string().optional(),

@@ -3,6 +3,7 @@ import { verifyApiKey } from '@/lib/api-key-auth';
 import { db } from '@/lib/db';
 import { monitors, pings } from '@/lib/db/schema';
 import { eq, and, desc, gte } from 'drizzle-orm';
+import { parsePageParam } from '@/lib/utils';
 import { getUserPlan, getPlanLimits } from '@/lib/plan-limits';
 import { checkApiKeyRateLimit } from '@/lib/rate-limit';
 
@@ -53,10 +54,7 @@ export async function GET(
     Date.now() - limits.pingHistoryDays * 24 * 60 * 60 * 1000,
   );
 
-  const page = Math.max(
-    1,
-    parseInt(req.nextUrl.searchParams.get('page') || '1', 10),
-  );
+  const page = parsePageParam(req.nextUrl.searchParams.get('page'));
   const offset = (page - 1) * PAGE_SIZE;
 
   const rows = await db
@@ -70,5 +68,5 @@ export async function GET(
   const hasMore = rows.length > PAGE_SIZE;
   const data = hasMore ? rows.slice(0, PAGE_SIZE) : rows;
 
-  return NextResponse.json({ data, hasMore, page });
+  return NextResponse.json({ data, hasMore, page, error: null });
 }
